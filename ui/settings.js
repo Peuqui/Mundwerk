@@ -92,14 +92,14 @@ function section(title, hint, ...content) {
 // as they are pressed, and the next key or mouse button completes it.
 function triggerField(object, key) {
   const caps = h('span', { class: 'caps' }, keyCaps(object[key]))
-  const note = h('span', { class: 'note' })
+  const warning = h('span', { class: 'note' })
   const button = h('button', { type: 'button', class: 'small', onclick: () => arm() }, 'Aufnehmen')
   async function arm() {
     note(`capture: armed for ${key} (was ${object[key] || 'none'})`)
     if (capturing) await disarm()
     capturing = { update, cancel: () => { caps.replaceChildren(...keyCaps(object[key])); done() } }
     caps.replaceChildren(h('kbd', { class: 'waiting' }, 'Taste drücken …'))
-    note.textContent = ''
+    warning.textContent = ''
     button.textContent = 'Abbrechen'
     button.classList.add('listening')
     button.onclick = () => disarm()
@@ -114,17 +114,17 @@ function triggerField(object, key) {
     } else if (kind === 'held') {
       caps.replaceChildren(...(trigger ? [...keyCaps(trigger), h('span', { class: 'plus' }, '+ …')] : [h('kbd', { class: 'waiting' }, 'Taste drücken …')]))
     } else {
-      note.textContent = `${trigger}: diese Taste geht nicht, bitte eine andere`
+      warning.textContent = `${trigger}: diese Taste geht nicht, bitte eine andere`
     }
   }
   function done() {
     capturing = null
-    note.textContent = ''
+    warning.textContent = ''
     button.textContent = 'Aufnehmen'
     button.classList.remove('listening')
     button.onclick = () => arm()
   }
-  return h('span', { class: 'trigger' }, caps, button, note)
+  return h('span', { class: 'trigger' }, caps, button, warning)
 }
 
 async function disarm() {
