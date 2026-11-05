@@ -16,7 +16,7 @@ macOS und Linux zu laufen.
 - **Auslöser:** jede Taste, Tastenkombination oder Maustaste (Mitte, Seitentasten), jeweils *gedrückt halten* (hört zu,
   solange gehalten) oder *an und aus* (ein Druck startet, der nächste beendet). Im Einstellungsfenster live aufgenommen:
   drücken, und er ist gesetzt. Auch eine Kombination, die die Software einer Maus sendet, zählt.
-- **Töne** bei Start, Ende und Abbruch (ping, pong, break, Dong-Ding, Ding-Dong oder eine eigene WAV-Datei), jeder in den Einstellungen anhörbar.
+- **Töne** bei Start, Ende und Abbruch (ping, pong, break oder eine eigene WAV-Datei), jeder in den Einstellungen anhörbar.
 - **Schreibt ins aktive Feld**, getippt (Unicode, mit Umlauten, ohne die Zwischenablage zu berühren) oder eingefügt, je
   Programm wählbar; ein Leerzeichen zwischen zwei Diktaten ins selbe Fenster; auf Wunsch Enter am Ende (schickt eine
   Chat-Nachricht sofort ab).

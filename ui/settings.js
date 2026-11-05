@@ -269,8 +269,7 @@ function soundField(key) {
   const builtin = sounds[key].startsWith(BUILTIN_PREFIX)
   const state = { kind: builtin ? sounds[key].slice(BUILTIN_PREFIX.length) : OWN_FILE }
   const path = h('input', { type: 'text', value: builtin ? '' : sounds[key], placeholder: t('sounds.path'), hidden: builtin, oninput: (event) => { sounds[key] = event.target.value } })
-  const options = [['ping', t('sounds.ping')], ['pong', t('sounds.pong')], ['break', t('sounds.break')],
-    ['dong_ding', t('sounds.dong_ding')], ['ding_dong', t('sounds.ding_dong')], [OWN_FILE, t('sounds.own_file')]]
+  const options = [['ping', t('sounds.ping')], ['pong', t('sounds.pong')], ['break', t('sounds.break')], [OWN_FILE, t('sounds.own_file')]]
   const select = choice(state, 'kind', options, () => {
     path.hidden = state.kind !== OWN_FILE
     sounds[key] = state.kind === OWN_FILE ? path.value : BUILTIN_PREFIX + state.kind

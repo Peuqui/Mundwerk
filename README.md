@@ -15,7 +15,7 @@ Mundwerk is a small tray app for Windows (Rust and [Tauri](https://tauri.app)), 
 - **Triggers:** any key, key combination or mouse button (middle, side buttons), each either *hold* (listens while held)
   or *toggle* (one press starts, the next stops). Taken live in the settings window: press it, and it is set. A
   combination a mouse's own software sends counts too.
-- **Sounds** at start, end and cancel (ping, pong, break, dong-ding, ding-dong, or a WAV file of your own), each to listen to in the settings.
+- **Sounds** at start, end and cancel (ping, pong, break, or a WAV file of your own), each to listen to in the settings.
 - **Writes into the focused field**, typed (Unicode, umlauts included, the clipboard untouched) or pasted, chosen per
   program; a space between two dictations into the same window; Enter at the end if you like (sends a chat message at
   once).

@@ -43,7 +43,7 @@ silence_level_percent = 1
 
 [sounds]
 enabled = true
-# builtin:<name> = a sound that comes with Mundwerk (ping, pong, break, ding_dong, dong_ding), otherwise a WAV file.
+# builtin:<name> = a sound that comes with Mundwerk (ping, pong, break), otherwise a WAV file.
 start = "builtin:ping"
 stop = "builtin:pong"
 cancel = "builtin:break"

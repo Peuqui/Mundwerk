@@ -1,4 +1,4 @@
-//! The sounds at start, end and cancel: built in (ping, pong, break, Ding-Dong, Dong-Ding) or a WAV file. The settings
+//! The sounds at start, end and cancel: built in (ping, pong, break) or a WAV file. The settings
 //! window plays one to listen to it before it is saved.
 
 use std::io::Cursor;
@@ -11,8 +11,6 @@ const BUILTIN: &[(&str, &[u8])] = &[
     ("ping", include_bytes!("../../assets/sounds/ping.wav")),
     ("pong", include_bytes!("../../assets/sounds/pong.wav")),
     ("break", include_bytes!("../../assets/sounds/break.wav")),
-    ("ding_dong", include_bytes!("../../assets/sounds/Ding-Dong.wav")),
-    ("dong_ding", include_bytes!("../../assets/sounds/Dong-Ding.wav")),
 ];
 
 #[derive(Clone, Copy)]
@@ -80,7 +78,7 @@ fn decode(source: &str) -> Result<Decoder<Cursor<Vec<u8>>>, String> {
             .iter()
             .find(|(builtin, _)| *builtin == name)
             .map(|(_, bytes)| bytes.to_vec())
-            .ok_or_else(|| format!("no built-in sound {name:?} (ping, pong, break, ding_dong, dong_ding)"))?,
+            .ok_or_else(|| format!("no built-in sound {name:?} (ping, pong, break)"))?,
         None => std::fs::read(source).map_err(|error| format!("sound {source:?}: {error}"))?,
     };
     Decoder::new(Cursor::new(bytes)).map_err(|error| format!("sound {source:?}: {error}"))
