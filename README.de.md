@@ -37,9 +37,9 @@ erscheint es dort, wo man schreibt: unten rechts neben der Schreibmarke, auf der
 Electron und andere, die ihren Text selbst zeichnen) sagen Windows nicht, wo ihre Schreibmarke steht; dann steht es neben
 dem Mauszeiger. Alternativ ein fester Platz, mit der Maus verschiebbar, auch auf andere Bildschirme. Im Menü des
 Infobereichs lässt es sich abschalten, dann zeigt nur das Symbol (blau bereit, rot hört zu, orange transkribiert) den
-Zustand. Solange Mundwerk zuhört, trägt der **Mauszeiger** ein rotes Mikrofon (Windows; abschaltbar); die Zeiger des
-Systems kehren danach zurück, auch beim Beenden und beim Start nach einem Absturz. Mit dem System starten:
-einstellbar.
+Zustand. Solange diktiert wird, läuft das **Logo der STT-Suite** unten rechts neben dem Mauszeiger mit, wie bei Agent-Orc
+und SpeechPulse: Beim Zuhören bewegen sich seine Balken, beim Transkribieren steht es still und grau (abschaltbar; der
+Mauszeiger selbst bleibt unberührt). Mit dem System starten: einstellbar.
 
 Aus, solange nicht anders eingestellt: Anhalten nach Stille, Höchstdauer einer Aufnahme, Enter am Ende.
 
@@ -76,7 +76,6 @@ Sicherheit).
   das System globale Tasten und das Tippen in fremde Fenster; dort braucht es später einen eigenen Weg.
 - `assets/sounds`: ping, pong und break aus FreeEchoDot2 (`audio_samples/`, Stand 37190a9, erzeugt mit
   `tools/gen_notify_sounds.py`), Ding-Dong und Dong-Ding ebenfalls von dort, ebenfalls algorithmisch erzeugt.
-- `tools/gen_pointer.py`: zeichnet den Mauszeiger beim Zuhören (`src-tauri/icons/pointer-listening.*`).
 
 ## Entwickeln
 

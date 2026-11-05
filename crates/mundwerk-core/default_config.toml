@@ -87,7 +87,8 @@ mode = "floating"
 # near_text = next to where you write: below and right of the text cursor, or of the mouse pointer for a program that
 # does not tell Windows where its text cursor is (browsers, many others); fixed = where it was moved last.
 placement = "near_text"
-# While listening, the mouse pointer carries a red microphone (Windows), so you see that a dictation runs.
+# While a dictation runs, the STT-Suite's logo goes along below and right of the mouse pointer (its bars move while
+# listening, still and grey while transcribing), as Agent-Orc and SpeechPulse show one.
 pointer = true
 opacity_percent = 90
 # How long an error stays in the overlay and the tray tooltip.

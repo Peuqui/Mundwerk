@@ -134,6 +134,18 @@ pub fn play_sound(source: String, volume_percent: u8) -> Result<(), String> {
     crate::sound::preview(&source, volume_percent)
 }
 
+/// Close the settings window (after saving or discarding: one does not have to reach for its corner).
+// Tauri hands a command its arguments by value.
+#[allow(clippy::needless_pass_by_value)]
+#[tauri::command]
+pub fn close_settings(app: AppHandle) {
+    if let Some(window) = app.get_webview_window(SETTINGS) {
+        if let Err(error) = window.close() {
+            log::error!("closing the settings window: {error}");
+        }
+    }
+}
+
 /// The language the pages show: of `setting` (the settings page while it is changed there), or the app's.
 #[tauri::command]
 pub fn ui_language(setting: Option<LanguageSetting>) -> Language {

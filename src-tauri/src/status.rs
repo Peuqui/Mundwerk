@@ -10,7 +10,7 @@ use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager};
 
 use crate::engine::{lock, Shared};
-use crate::{place, pointer, texts, tray, OVERLAY};
+use crate::{badge, place, texts, tray, OVERLAY};
 
 /// The event the overlay listens to.
 pub const STATUS_EVENT: &str = "mundwerk://status";
@@ -64,11 +64,7 @@ fn show(app: &AppHandle, status: &Status) {
         return;
     };
     let floating = settings.mode == OverlayMode::Floating;
-    if *status == Status::Listening && settings.pointer {
-        pointer::listening();
-    } else if *status != Status::Listening {
-        pointer::restore();
-    }
+    badge::show(app, status, settings.pointer);
     if let Some(overlay) = app.get_webview_window(OVERLAY) {
         if *status == Status::Listening && floating && settings.placement == Placement::NearText {
             let place = overlay.outer_size().ok().and_then(|size| place::near_text(app, size));

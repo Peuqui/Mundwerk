@@ -393,12 +393,14 @@ document.getElementById('save').addEventListener('click', async () => {
   try {
     note('save clicked')
     await invoke('save_settings', { settings: config })
-    say(t('settings.saved'), 'ok')
+    // Saved and in effect: the window has done its work. (A refusal keeps it open, with the reason.)
+    await invoke('close_settings')
   } catch (error) {
     say(`${t('settings.not_saved')}: ${error}`, 'error')
   }
 })
 
-document.getElementById('reload').addEventListener('click', () => load().catch((error) => report(String(error))))
+// Discard: nothing changes, the window closes.
+document.getElementById('reload').addEventListener('click', () => invoke('close_settings').catch((error) => report(String(error))))
 
 load().catch((error) => report(String(error)))

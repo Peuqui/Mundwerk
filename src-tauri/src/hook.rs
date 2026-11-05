@@ -10,6 +10,9 @@ pub static TRACE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool:
 /// Called for every press; `true` = swallow it. Must be quick: Windows drops a hook that keeps it waiting.
 pub type Handler = Box<dyn Fn(&Event) -> bool + Send + Sync>;
 
+/// Called for every move of the mouse pointer (screen pixels); as quick as [`Handler`].
+pub type MoveHandler = Box<dyn Fn(i32, i32) + Send + Sync>;
+
 #[cfg(windows)]
 pub use windows_hook::run;
 
@@ -30,17 +33,19 @@ mod windows_hook {
         WM_SYSKEYUP, WM_XBUTTONDOWN, WM_XBUTTONUP,
     };
 
-    use super::{Handler, TRACE};
+    use super::{Handler, MoveHandler, TRACE};
 
-    // The hook procedures are plain functions; they reach the handler through this.
+    // The hook procedures are plain functions; they reach the handlers through these.
     static HANDLER: OnceLock<Handler> = OnceLock::new();
+    static MOVE_HANDLER: OnceLock<MoveHandler> = OnceLock::new();
     // Set at the first key the hook sees: the log then says once that keys arrive at all.
     static KEYS_ARRIVE: AtomicBool = AtomicBool::new(false);
 
     /// Install the hooks and pump messages for them (low-level hooks are called on the thread that installed
     /// them, while it waits for messages). Does not return while the app runs.
-    pub fn run(handler: Handler) -> Result<(), String> {
+    pub fn run(handler: Handler, on_move: MoveHandler) -> Result<(), String> {
         HANDLER.set(handler).map_err(|_| "the hook runs already".to_owned())?;
+        MOVE_HANDLER.set(on_move).map_err(|_| "the hook runs already".to_owned())?;
         // SAFETY: the procedures are valid for the life of the program; no module handle for low-level hooks.
         unsafe {
             SetWindowsHookExW(WH_KEYBOARD_LL, Some(keyboard), None, 0).map_err(|error| error.to_string())?;
@@ -101,6 +106,12 @@ mod windows_hook {
             let info = unsafe { &*(data.0 as *const MSLLHOOKSTRUCT) };
             let own = is_own(info.dwExtraInfo);
             #[allow(clippy::cast_possible_truncation)] // window messages fit in u32
+            if message.0 as u32 == WM_MOUSEMOVE {
+                if let Some(on_move) = MOVE_HANDLER.get() {
+                    on_move(info.pt.x, info.pt.y);
+                }
+            }
+            #[allow(clippy::cast_possible_truncation)] // window messages fit in u32
             if TRACE.load(Ordering::Relaxed) && message.0 as u32 != WM_MOUSEMOVE {
                 log::info!(
                     "hook: mouse message={:#x} data={:#x} flags={:#x} extra={:#x} own={own}",
@@ -137,14 +148,20 @@ mod rdev_hook {
     use mundwerk_core::controller::{Event, Modifier, Press};
     use rdev::{Button, EventType, Key};
 
-    use super::Handler;
+    use super::{Handler, MoveHandler};
 
     /// rdev's grab (macOS: accessibility permission; Linux: read access to /dev/input). Does not return while the
     /// app runs.
-    pub fn run(handler: Handler) -> Result<(), String> {
-        rdev::grab(move |event| match translate(&event.event_type) {
-            Some(translated) if handler(&translated) => None,
-            _ => Some(event),
+    pub fn run(handler: Handler, on_move: MoveHandler) -> Result<(), String> {
+        rdev::grab(move |event| {
+            if let EventType::MouseMove { x, y } = event.event_type {
+                #[allow(clippy::cast_possible_truncation)] // screen coordinates
+                on_move(x.round() as i32, y.round() as i32);
+            }
+            match translate(&event.event_type) {
+                Some(translated) if handler(&translated) => None,
+                _ => Some(event),
+            }
         })
         .map_err(|error| format!("{error:?}"))
     }

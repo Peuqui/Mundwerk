@@ -5,11 +5,11 @@
 //! mundwerk-core.
 
 mod audio;
+mod badge;
 mod engine;
 mod hook;
 mod insert;
 mod place;
-mod pointer;
 mod settings;
 mod sound;
 mod status;
@@ -76,6 +76,7 @@ fn main() {
             settings::page_log,
             settings::ui_language,
             settings::play_sound,
+            settings::close_settings,
             overlay_opacity,
         ])
         .setup(|app| {
@@ -84,11 +85,11 @@ fn main() {
         })
         .build(tauri::generate_context!())
         .unwrap_or_else(|error| panic!("Mundwerk cannot start: {error}"));
-    app.run(|_, event| match event {
+    app.run(|_, event| {
         // A tray app: closing the settings window does not end it, only quitting from the tray does.
-        RunEvent::ExitRequested { api, code: None, .. } => api.prevent_exit(),
-        RunEvent::Exit => pointer::reset(),
-        _ => {}
+        if let RunEvent::ExitRequested { api, code: None, .. } = event {
+            api.prevent_exit();
+        }
     });
 }
 
@@ -96,7 +97,6 @@ fn setup(app: &AppHandle) -> Result<(), String> {
     let folder = app.path().app_config_dir().map_err(|error| error.to_string())?;
     let config_path = folder.join(CONFIG_FILE);
     app.manage(Startup { config_path: config_path.clone() });
-    pointer::reset();
     let reporter = Reporter::new(app.clone());
     app.manage(reporter.clone());
     let capture: CaptureState = Arc::new(Mutex::new(Capture::default()));
@@ -119,6 +119,7 @@ fn setup(app: &AppHandle) -> Result<(), String> {
         reporter.report(Status::Error(format!("{}: {error}", texts::tr("error.autostart"))));
     }
     create_overlay(app, &config_path).map_err(|error| error.to_string())?;
+    badge::create(app).map_err(|error| error.to_string())?;
     tray::create(app).map_err(|error| error.to_string())?;
     reporter.report(Status::Idle);
     Ok(())
@@ -127,6 +128,8 @@ fn setup(app: &AppHandle) -> Result<(), String> {
 /// Every press goes to a running capture first (the settings window sees what is held, then the trigger), then to
 /// the dictation. Only the press that completes a capture is swallowed by it.
 fn start_hook(app: &AppHandle, capture: CaptureState, reporter: Reporter) -> Result<(), String> {
+    let for_moves = app.clone();
+    let on_move = move |x: i32, y: i32| badge::moved(&for_moves, x, y);
     let app = app.clone();
     let handler = move |event: &Event| {
         let update = lock(&capture).observe(event);
@@ -148,7 +151,7 @@ fn start_hook(app: &AppHandle, capture: CaptureState, reporter: Reporter) -> Res
     std::thread::Builder::new()
         .name("hook".into())
         .spawn(move || {
-            if let Err(error) = hook::run(Box::new(handler)) {
+            if let Err(error) = hook::run(Box::new(handler), Box::new(on_move)) {
                 reporter.report(Status::Error(format!("{}: {error}", texts::tr("error.hook"))));
             }
         })

@@ -33,9 +33,9 @@ A small **overlay** shows listening and transcribing and never takes the focus f
 shows where one writes: below and right of the text cursor, on its screen. Many programs (browsers, Electron and others
 that draw their own text) do not tell Windows where their text cursor is; then it shows by the mouse pointer. Or a fixed
 place, moved with the mouse, other screens included. The tray menu switches it off; then only the icon (blue ready, red
-listening, orange transcribing) shows the state. While Mundwerk listens, the **mouse pointer** carries a red microphone
-(Windows; can be switched off); the system's pointers come back after, also on quitting and on a start after a crash.
-Starting with the system: a setting.
+listening, orange transcribing) shows the state. While dictating, the **STT-Suite's logo** goes along below and right of
+the mouse pointer, as in Agent-Orc and SpeechPulse: its bars move while listening, it stands still and grey while
+transcribing (can be switched off; the pointer itself stays as it is). Starting with the system: a setting.
 
 Off unless set: stopping after silence, a maximum recording length, Enter at the end.
 
@@ -71,7 +71,6 @@ The STT-Suite needs its token for calls from another machine (`server.token`, se
   into other windows; that needs its own way later.
 - `assets/sounds`: ping, pong and break from FreeEchoDot2 (`audio_samples/`, at 37190a9, made by
   `tools/gen_notify_sounds.py`), ding-dong and dong-ding from there as well, made by algorithm too.
-- `tools/gen_pointer.py`: draws the mouse pointer while listening (`src-tauri/icons/pointer-listening.*`).
 
 ## Development
 
