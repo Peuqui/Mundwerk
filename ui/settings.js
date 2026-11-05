@@ -93,16 +93,18 @@ function section(title, hint, ...content) {
 function triggerField(object, key) {
   const caps = h('span', { class: 'caps' }, keyCaps(object[key]))
   const warning = h('span', { class: 'note' })
-  const button = h('button', { type: 'button', class: 'small', onclick: () => arm() }, 'Aufnehmen')
+  // This field's capture while it runs: one click handler arms it or, while it runs, cancels it.
+  let mine = null
+  const button = h('button', { type: 'button', class: 'small', onclick: () => (capturing && capturing === mine ? disarm() : arm()) }, 'Aufnehmen')
   async function arm() {
     note(`capture: armed for ${key} (was ${object[key] || 'none'})`)
     if (capturing) await disarm()
-    capturing = { update, cancel: () => { caps.replaceChildren(...keyCaps(object[key])); done() } }
+    mine = { update, cancel: () => { caps.replaceChildren(...keyCaps(object[key])); done() } }
+    capturing = mine
     caps.replaceChildren(h('kbd', { class: 'waiting' }, 'Taste drücken …'))
     warning.textContent = ''
     button.textContent = 'Abbrechen'
     button.classList.add('listening')
-    button.onclick = () => disarm()
     await invoke('start_capture')
   }
   function update({ kind, trigger }) {
@@ -119,10 +121,10 @@ function triggerField(object, key) {
   }
   function done() {
     capturing = null
+    mine = null
     warning.textContent = ''
     button.textContent = 'Aufnehmen'
     button.classList.remove('listening')
-    button.onclick = () => arm()
   }
   return h('span', { class: 'trigger' }, caps, button, warning)
 }
@@ -130,6 +132,7 @@ function triggerField(object, key) {
 async function disarm() {
   if (!capturing) return
   const running = capturing
+  note('capture: cancelled')
   await invoke('stop_capture')
   running.cancel()
 }

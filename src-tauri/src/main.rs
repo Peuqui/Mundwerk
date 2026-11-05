@@ -124,6 +124,9 @@ fn start_hook(app: &AppHandle, capture: CaptureState, reporter: Reporter) -> Res
         if let Some(update) = update {
             log::info!("capture: {update:?}");
             let done = matches!(update, Update::Done(_));
+            if done {
+                hook::TRACE.store(false, std::sync::atomic::Ordering::Relaxed);
+            }
             if let Err(error) = app.emit(CAPTURE_EVENT, update) {
                 log::error!("capture: sending to the settings window: {error}");
             }

@@ -3,6 +3,10 @@
 
 use mundwerk_core::controller::Event;
 
+/// While set, the hook writes every raw press into the log (a running capture sets it): to see what a device
+/// really sends, e.g. a mouse's macro.
+pub static TRACE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
 /// Called for every press; `true` = swallow it. Must be quick: Windows drops a hook that keeps it waiting.
 pub type Handler = Box<dyn Fn(&Event) -> bool + Send + Sync>;
 
@@ -14,6 +18,7 @@ pub use rdev_hook::run;
 
 #[cfg(windows)]
 mod windows_hook {
+    use std::sync::atomic::Ordering;
     use std::sync::OnceLock;
 
     use mundwerk_core::controller::{Event, Press};
@@ -21,11 +26,11 @@ mod windows_hook {
     use windows::Win32::Foundation::{LPARAM, LRESULT, WPARAM};
     use windows::Win32::UI::WindowsAndMessaging::{
         CallNextHookEx, GetMessageW, SetWindowsHookExW, HC_ACTION, KBDLLHOOKSTRUCT, MSG, MSLLHOOKSTRUCT,
-        WH_KEYBOARD_LL, WH_MOUSE_LL, WM_KEYDOWN, WM_KEYUP, WM_MBUTTONDOWN, WM_MBUTTONUP, WM_SYSKEYDOWN, WM_SYSKEYUP,
-        WM_XBUTTONDOWN, WM_XBUTTONUP,
+        WH_KEYBOARD_LL, WH_MOUSE_LL, WM_KEYDOWN, WM_KEYUP, WM_MBUTTONDOWN, WM_MBUTTONUP, WM_MOUSEMOVE, WM_SYSKEYDOWN,
+        WM_SYSKEYUP, WM_XBUTTONDOWN, WM_XBUTTONUP,
     };
 
-    use super::Handler;
+    use super::{Handler, TRACE};
 
     // The hook procedures are plain functions; they reach the handler through this.
     static HANDLER: OnceLock<Handler> = OnceLock::new();
@@ -60,6 +65,15 @@ mod windows_hook {
             // SAFETY: for WH_KEYBOARD_LL with HC_ACTION, lParam points to a KBDLLHOOKSTRUCT.
             let info = unsafe { &*(data.0 as *const KBDLLHOOKSTRUCT) };
             let own = is_own(info.dwExtraInfo);
+            if TRACE.load(Ordering::Relaxed) {
+                log::info!(
+                    "hook: key message={:#x} vk={:#x} flags={:#x} extra={:#x} own={own}",
+                    message.0,
+                    info.vkCode,
+                    info.flags.0,
+                    info.dwExtraInfo
+                );
+            }
             #[allow(clippy::cast_possible_truncation)] // window messages fit in u32
             let press = match message.0 as u32 {
                 WM_KEYDOWN | WM_SYSKEYDOWN => Some(Press::Down),
@@ -81,6 +95,16 @@ mod windows_hook {
             // SAFETY: for WH_MOUSE_LL with HC_ACTION, lParam points to an MSLLHOOKSTRUCT.
             let info = unsafe { &*(data.0 as *const MSLLHOOKSTRUCT) };
             let own = is_own(info.dwExtraInfo);
+            #[allow(clippy::cast_possible_truncation)] // window messages fit in u32
+            if TRACE.load(Ordering::Relaxed) && message.0 as u32 != WM_MOUSEMOVE {
+                log::info!(
+                    "hook: mouse message={:#x} data={:#x} flags={:#x} extra={:#x} own={own}",
+                    message.0,
+                    info.mouseData,
+                    info.flags,
+                    info.dwExtraInfo
+                );
+            }
             // The high word of mouseData says which X button.
             #[allow(clippy::cast_possible_truncation)]
             let high_word = (info.mouseData >> 16) as u16;

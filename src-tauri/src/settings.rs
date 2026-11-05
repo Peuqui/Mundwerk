@@ -112,6 +112,7 @@ pub fn microphones() -> Result<Vec<String>, String> {
 pub fn start_capture(capture: State<'_, CaptureState>) {
     log::info!("capture: started");
     lock(&capture).start();
+    crate::hook::TRACE.store(true, std::sync::atomic::Ordering::Relaxed);
 }
 
 // Tauri hands a command its arguments by value.
@@ -120,6 +121,7 @@ pub fn start_capture(capture: State<'_, CaptureState>) {
 pub fn stop_capture(capture: State<'_, CaptureState>) {
     log::info!("capture: stopped");
     lock(&capture).stop();
+    crate::hook::TRACE.store(false, std::sync::atomic::Ordering::Relaxed);
 }
 
 /// What the settings page reports for the log: its errors and the steps of a capture.
