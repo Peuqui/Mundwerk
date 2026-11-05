@@ -12,7 +12,8 @@ use crate::texts;
 
 pub const BADGE: &str = "badge";
 const PAGE: &str = "badge.html";
-/// As big as Agent-Orc's (logical pixels).
+/// The window as small as it goes; Windows keeps it at its minimum size (about 136 x 39), and the page draws the
+/// badge at 28 px in its top left corner, so the corner is where the badge goes (logical pixels).
 const SIZE: LogicalSize<f64> = LogicalSize::new(28.0, 28.0);
 /// Above and right of the pointer's tip, exactly as Agent-Orc places it (its DictationPointer.vue; logical pixels).
 const OFFSET: LogicalPosition<f64> = LogicalPosition::new(14.0, -38.0);
