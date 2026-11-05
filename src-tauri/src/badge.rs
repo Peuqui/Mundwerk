@@ -1,11 +1,11 @@
-//! The STT-Suite's logo by the mouse pointer while a dictation runs, below and right of the pointer's tip, as
-//! Agent-Orc and `SpeechPulse` show one: its bars move while Mundwerk listens, it stands still and grey while it
+//! Agent-Orc's dictation badge (the STT-Suite's logo) by the mouse pointer while a dictation runs, above and right of
+//! the pointer's tip as Agent-Orc places it (a tooltip shows below the pointer), as `SpeechPulse` shows one: its bars move while Mundwerk listens, it stands still and grey while it
 //! transcribes (`ui/badge.html`). A small window that takes no clicks and no focus; the system hook reports the
 //! pointer's moves, and the window follows them while it shows.
 
 use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
 
-use tauri::{AppHandle, LogicalSize, Manager, PhysicalPosition, WebviewUrl, WebviewWindowBuilder};
+use tauri::{AppHandle, LogicalPosition, LogicalSize, Manager, PhysicalPosition, WebviewUrl, WebviewWindowBuilder};
 
 use crate::status::Status;
 use crate::texts;
@@ -13,9 +13,9 @@ use crate::texts;
 pub const BADGE: &str = "badge";
 const PAGE: &str = "badge.html";
 /// As big as Agent-Orc's (logical pixels).
-pub const SIZE: LogicalSize<f64> = LogicalSize::new(28.0, 28.0);
-/// Below and right of the pointer's tip, clear of the pointer itself (physical pixels).
-pub const OFFSET: i32 = 18;
+const SIZE: LogicalSize<f64> = LogicalSize::new(28.0, 28.0);
+/// Above and right of the pointer's tip, as Agent-Orc places it (logical pixels).
+const OFFSET: LogicalPosition<f64> = LogicalPosition::new(14.0, -38.0);
 
 // While the badge shows, the hook's moves move it.
 static FOLLOWING: AtomicBool = AtomicBool::new(false);
@@ -87,7 +87,15 @@ pub fn moved(app: &AppHandle, x: i32, y: i32) {
 }
 
 fn place(badge: &tauri::WebviewWindow) {
-    let position = PhysicalPosition::new(X.load(Ordering::Relaxed) + OFFSET, Y.load(Ordering::Relaxed) + OFFSET);
+    let scale = match badge.scale_factor() {
+        Ok(scale) => scale,
+        Err(error) => {
+            log::error!("badge scale: {error}");
+            return;
+        }
+    };
+    let offset: PhysicalPosition<i32> = OFFSET.to_physical(scale);
+    let position = PhysicalPosition::new(X.load(Ordering::Relaxed) + offset.x, Y.load(Ordering::Relaxed) + offset.y);
     if let Err(error) = badge.set_position(position) {
         log::error!("badge position: {error}");
     }

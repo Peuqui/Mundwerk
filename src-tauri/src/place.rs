@@ -4,33 +4,20 @@
 
 use tauri::{AppHandle, PhysicalPosition, PhysicalSize};
 
-use crate::badge;
-
 /// How far from the text cursor or pointer the overlay's corner is (physical pixels).
 const GAP: i32 = 18;
 
-/// The overlay's top left corner next to where one writes, kept on the screen that place is on. By the pointer it
-/// goes below the badge that follows the pointer (`badge.rs`), so the two do not cover each other.
+/// The overlay's top left corner next to where one writes, kept on the screen that place is on (the badge at the
+/// pointer sits above it, `badge.rs`, so the two do not meet).
 pub fn near_text(app: &AppHandle, overlay_size: PhysicalSize<u32>) -> Option<PhysicalPosition<i32>> {
-    let (anchor, by_pointer) = match text_cursor() {
-        Some(caret) => (caret, false),
-        None => (pointer(app)?, true),
-    };
+    let anchor = text_cursor().or_else(|| pointer(app))?;
     // Screen and window sizes in pixels fit an i32 by far.
     #[allow(clippy::cast_possible_wrap)]
     let (width, height) = (overlay_size.width as i32, overlay_size.height as i32);
     #[allow(clippy::cast_possible_truncation)] // screen coordinates
     let monitor = app.monitor_from_point(f64::from(anchor.x), f64::from(anchor.y)).ok().flatten();
-    let below = if by_pointer {
-        let scale = monitor.as_ref().map_or(1.0, tauri::Monitor::scale_factor);
-        #[allow(clippy::cast_possible_truncation)] // a few dozen pixels
-        let badge = (badge::SIZE.height * scale).round() as i32;
-        badge::OFFSET + badge + GAP / 2
-    } else {
-        GAP
-    };
     let mut x = anchor.x + GAP;
-    let mut y = anchor.y + below;
+    let mut y = anchor.y + GAP;
     if let Some(monitor) = monitor {
         let origin = monitor.position();
         #[allow(clippy::cast_possible_wrap)]

@@ -33,7 +33,7 @@ A small **overlay** shows listening and transcribing and never takes the focus f
 shows where one writes: below and right of the text cursor, on its screen. Many programs (browsers, Electron and others
 that draw their own text) do not tell Windows where their text cursor is; then it shows by the mouse pointer. Or a fixed
 place, moved with the mouse, other screens included. The tray menu switches it off; then only the icon (blue ready, red
-listening, orange transcribing) shows the state. While dictating, the **STT-Suite's logo** goes along below and right of
+listening, orange transcribing) shows the state. While dictating, the **STT-Suite's logo** goes along above and right of
 the mouse pointer, as in Agent-Orc and SpeechPulse: its bars move while listening, it stands still and grey while
 transcribing (can be switched off; the pointer itself stays as it is). Starting with the system: a setting.
 
