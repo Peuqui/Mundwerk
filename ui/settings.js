@@ -138,7 +138,7 @@ async function disarm() {
 }
 
 // The keys of a capture come from this page: while Mundwerk's own window is in front, Windows does not hand them to
-// its system hook (seen on Aragon: the mouse reached the hook, no key did). Mouse buttons still come from the hook.
+// its system hook (seen on Windows 11: the mouse reached the hook, no key did). Mouse buttons still come from the hook.
 // While a capture runs, a key does nothing else here.
 const MODIFIER_CODES = ['ControlLeft', 'ControlRight', 'ShiftLeft', 'ShiftRight', 'AltLeft', 'AltRight', 'MetaLeft', 'MetaRight']
 // KeyboardEvent.code as the settings name keys (letters, digits and F1-F24 below).
