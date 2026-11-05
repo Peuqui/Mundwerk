@@ -48,9 +48,22 @@ Blase erscheint also nur, solange ein Textfeld aktiv ist, klein neben ihm oder a
 dazu verschiebbar und halb an den Rand zu schieben. Man sieht dann, was man jetzt sieht, nur ohne Tastatur und mit
 Mikrofon.
 
-**Oder ganz ohne Blase:** Der Dienst darf Hardwaretasten abfangen (`FLAG_REQUEST_FILTER_KEY_EVENTS`); ein langer Druck
-auf „Leiser“ könnte das Diktat starten und beenden, wie unter Windows die Seitentaste der Maus. Beides lässt sich
-verbinden.
+**Oder ganz ohne Blase** (Peuqui: Tasten und Gesten sind eine gute Idee):
+
+- **Hardwaretaste:** Der Dienst darf Tasten abfangen (`FLAG_REQUEST_FILTER_KEY_EVENTS`); ein langer Druck auf „Leiser“
+  startet und beendet das Diktat, wie unter Windows die Seitentaste der Maus.
+- **Die Bedienungshilfe-Schaltfläche des Systems:** Androids eigener kleiner Knopf für Bedienungshilfen (seit Android 11
+  auch bei Gestensteuerung schwebend, blass, wenn er nicht gebraucht wird, an den Rand zu schieben). Ein Tippen startet
+  oder beendet das Diktat (`AccessibilityButtonController`): eine Blase, die das System selbst führt.
+- **Doppeltippen auf die Rückseite:** Pixel „Quick Tap“, Samsung „RegiStar“ (Good Lock); beides kann eine Aktion von
+  Mundwerk auslösen.
+- **Wischen über den Fingerabdrucksensor** (`FingerprintGestureController`): nur, wo das Gerät es kann; viele Sensoren im
+  Display können es nicht.
+- **Wischen vom Bildschirmrand:** ein schmaler, unsichtbarer Streifen; er nimmt dort jede Berührung, eher nicht.
+- Nicht: Gesten mit mehreren Fingern über die Bedienungshilfe; sie verlangen „Tippen erkunden“, und das ändert die ganze
+  Bedienung des Handys.
+
+Diese Wege lassen sich verbinden, etwa Leiser-Taste und Rückseite.
 
 **An der Schreibmarke einfügen:** `ACTION_SET_TEXT` ersetzt das ganze Feld. Mundwerk liest deshalb den Text des Felds
 und die Stelle der Schreibmarke (`textSelectionStart`/`End`), setzt das Diktat dort ein (mit Leerzeichen davor, wenn
@@ -77,7 +90,8 @@ nicht mitmacht.
   zuerst prüfen, ob das Einfügen an der Schreibmarke geht oder die Zwischenablage nötig ist. Erwartung: WhatsApp und
   FairEmail haben gewöhnliche Eingabefelder (geht); Gmail Betreff und Empfänger ja, beim Textteil hängt es an der App;
   im Browser gewöhnliche Formularfelder meist ja, Web-Editoren, die ihren Text selbst zeichnen, über die Zwischenablage.
-- Blase nur bei aktivem Textfeld, Leiser-Taste oder beides?
+- Welcher Auslöser: Blase nur bei aktivem Textfeld, Leiser-Taste, System-Schaltfläche, Rückseite oder eine Mischung? Was
+  geht, hängt am Handy (Modell?).
 - Reicht zu Hause, oder soll es von Anfang an unterwegs gehen (dann zuerst der Proxy)?
 - Android Auto: gewünscht? Dann Weg 2 und seine Grenzen dort genauer ansehen.
 - Bauen auf dem Mini: Android-SDK und Build-Tools wären neu zu installieren.
