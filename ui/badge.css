@@ -10,7 +10,9 @@ html, body { margin: 0; height: 100%; background: transparent; overflow: hidden;
 .bar:nth-child(4) { animation-delay: -0.75s; }
 .bar:nth-child(5) { animation-delay: -0.45s; }
 .arc { animation: glow 1.2s ease-in-out infinite; }
-.rim { stroke: #94a3b8; }
+/* Agent-Orc's: yellow at rest (the old microphone's, amber-300), red while it listens, grey through the filter while
+   it transcribes. */
+.rim { stroke: #fcd34d; }
 /* Red while it listens (Peuqui), as Agent-Orc's accent. */
 .listening .rim { stroke: #ef4444; }
 .arc.far { animation-delay: -0.6s; }
