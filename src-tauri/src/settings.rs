@@ -20,7 +20,7 @@ use crate::status::{Reporter, Status};
 use crate::{texts, Startup};
 
 pub const SETTINGS: &str = "settings";
-/// The event that tells the settings window how a live capture goes (mundwerk_core::capture::Update).
+/// The event that tells the settings window how a live capture goes (`mundwerk_core::capture::Update`).
 pub const CAPTURE_EVENT: &str = "mundwerk://capture";
 const SETTINGS_PAGE: &str = "settings.html";
 const POSITION_FILE: &str = "overlay-position.json";
