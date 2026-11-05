@@ -104,7 +104,7 @@ fn take_effect(app: &AppHandle, shared: &Shared, config: Config) -> Result<(), S
     set_autostart(app, config.system.autostart)?;
     shared.apply(config)?;
     if let Some(reporter) = app.try_state::<Reporter>() {
-        reporter.report(Status::Idle);
+        reporter.report(shared.status());
     }
     Ok(())
 }

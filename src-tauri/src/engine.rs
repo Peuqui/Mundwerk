@@ -50,6 +50,17 @@ impl Shared {
         outcome.swallow
     }
 
+    /// What Mundwerk is doing now (the one place that decides it): recording wins over transcribing.
+    pub fn status(&self) -> Status {
+        if lock(&self.controller).is_recording() {
+            Status::Listening
+        } else if self.pending.load(Ordering::SeqCst) > 0 {
+            Status::Transcribing
+        } else {
+            Status::Idle
+        }
+    }
+
     /// New settings (the settings window saved them): triggers, history size and everything else from now on.
     pub fn apply(&self, config: Config) -> Result<(), String> {
         *lock(&self.controller) = Controller::new(&config).map_err(|error| error.to_string())?;
@@ -149,12 +160,12 @@ fn record(shared: &Shared, actions: &Receiver<Action>, jobs: &Sender<Job>, repor
             }
             Action::Discard => {
                 current.take();
-                reporter.report(idle_or_transcribing(shared));
+                reporter.report(shared.status());
             }
             Action::Cancel => {
                 current.take();
                 play(Cue::Cancel);
-                reporter.report(idle_or_transcribing(shared));
+                reporter.report(shared.status());
             }
         }
     }
@@ -167,14 +178,6 @@ fn limit_reached(config: &Config, recording: &Recording) -> bool {
         || (maximum > 0 && recording.elapsed() >= Duration::from_secs(maximum))
 }
 
-fn idle_or_transcribing(shared: &Shared) -> Status {
-    if shared.pending.load(Ordering::SeqCst) > 0 {
-        Status::Transcribing
-    } else {
-        Status::Idle
-    }
-}
-
 fn transcribe(shared: &Shared, queue: &Receiver<Job>, reporter: &Reporter) {
     let mut inserter = match Inserter::new() {
         Ok(inserter) => Some(inserter),
@@ -185,12 +188,9 @@ fn transcribe(shared: &Shared, queue: &Receiver<Job>, reporter: &Reporter) {
     };
     for job in queue {
         let result = one(shared, &job, inserter.as_mut());
-        let left = shared.pending.fetch_sub(1, Ordering::SeqCst) - 1;
-        let recording = lock(&shared.controller).is_recording();
+        shared.pending.fetch_sub(1, Ordering::SeqCst);
         match result {
-            Ok(()) if recording => reporter.report(Status::Listening),
-            Ok(()) if left > 0 => reporter.report(Status::Transcribing),
-            Ok(()) => reporter.report(Status::Idle),
+            Ok(()) => reporter.report(shared.status()),
             Err(error) => reporter.report(Status::Error(error)),
         }
     }

@@ -46,7 +46,9 @@ impl Reporter {
             std::thread::spawn(move || {
                 std::thread::sleep(Duration::from_secs(shown));
                 if reporter.generation.load(Ordering::SeqCst) == generation {
-                    reporter.report(Status::Idle);
+                    // What is going on by now, which may be a new recording.
+                    let now = reporter.app.try_state::<Arc<Shared>>().map_or(Status::Idle, |shared| shared.status());
+                    reporter.report(now);
                 }
             });
         }
