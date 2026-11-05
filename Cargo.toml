@@ -1,0 +1,12 @@
+[workspace]
+resolver = "2"
+members = ["crates/mundwerk-core"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "PolyForm-Noncommercial-1.0.0"
+authors = ["Peuqui"]
+
+[workspace.lints.clippy]
+pedantic = { level = "warn", priority = -1 }

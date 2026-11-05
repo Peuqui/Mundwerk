@@ -1,0 +1,91 @@
+# Mundwerk's settings. On the first start this file is written to the user's settings folder; from then on
+# that copy is the one that counts, and the settings window changes it.
+
+[server]
+# The STT-Suite, tried in this order: the first one that answers takes the recording. A server that cannot be
+# reached within connect_timeout_ms is skipped; one that answers with an error is not (its answer is shown).
+urls = ["http://10.0.0.1:5080", "http://192.168.0.249:5080"]
+# The token of the STT-Suite (X-STT-Suite-Token); empty = none (enough on the machine of the suite itself).
+token = ""
+connect_timeout_ms = 1500
+
+[transcription]
+# auto = the STT-Suite chooses GPU or CPU itself (its automatic list, GPU-Orc's traffic light).
+device = "auto"
+language = "de"
+# Empty = what the STT-Suite has set for the device.
+engine = ""
+model = ""
+quality = ""
+
+# What starts a dictation: a key, a combination ("Ctrl+Alt+Space") or a mouse button ("Mouse:X1", "Mouse:X2",
+# "Mouse:Middle"). hold = record while it is held; toggle = press once to start, once more to stop.
+# pass_through = the press also reaches the program below (false: a side button does not also page back).
+[[triggers]]
+input = "Mouse:X2"
+mode = "hold"
+pass_through = false
+
+[[triggers]]
+input = "F9"
+mode = "toggle"
+pass_through = false
+
+[recording]
+# Empty = the system's default microphone.
+microphone = ""
+# A press shorter than this is a slip and is thrown away.
+min_press_ms = 300
+# Throws the recording away without typing anything.
+cancel_key = "Escape"
+# Stop by itself after this much silence / after this long; 0 = never.
+stop_after_silence_s = 0
+max_duration_s = 0
+
+[sounds]
+enabled = true
+# builtin:<name> = a sound that comes with Mundwerk (ping, pong, break: the Echo Dot's), otherwise a WAV file.
+start = "builtin:ping"
+stop = "builtin:pong"
+cancel = "builtin:break"
+volume = 0.6
+
+[insert]
+# type = as if typed (Unicode, umlauts included, the clipboard untouched); clipboard = paste with Ctrl+V and put
+# back what the clipboard held.
+method = "type"
+# A space before the text when the last dictation went into the same window and did not end in a space, so
+# that two dictations in a row do not stick together ("…done.Then…").
+space_between_dictations = true
+# Press Enter after the text (sends a chat message at once).
+press_enter = false
+
+# Programs that need the other method, by process name, e.g. a remote desktop or a terminal.
+# [[insert.per_program]]
+# process = "mstsc.exe"
+# method = "clipboard"
+
+# Words the speech recognition gets wrong, especially names. Each rule: what to look for and what to write instead.
+# variants = whole words, case ignored; pattern = a regular expression for what variants cannot say.
+[[replacements]]
+variants = ["Komm mit", "Kommit"]
+replacement = "commit"
+
+[[replacements]]
+variants = ["Falscode", "VS-Code"]
+replacement = "VS Code"
+
+[overlay]
+# floating = a small window that shows listening and transcribing; tray_only = only the tray icon shows it.
+mode = "floating"
+# Where the floating window was left (screen coordinates, any monitor); empty = bottom centre of the main screen.
+position = []
+opacity = 0.9
+
+[history]
+# How many dictations the history keeps (tray menu: paste again, copy).
+size = 50
+
+[system]
+# Start with the system.
+autostart = false
