@@ -22,7 +22,7 @@ Mundwerk is a small tray app for Windows (Rust and [Tauri](https://tauri.app)), 
 - **Replacement list** for what the recognition gets wrong, names above all: variants as whole words
   (`Komm mit | Kommit → commit`), or a regular expression.
 - **Overlay** next to where you write, and the **STT-Suite's logo by the mouse pointer** while dictating (its bars move
-  while it listens, it turns grey while it transcribes), as in Agent-Orc and SpeechPulse.
+  and its rim is red while it listens, it turns grey while it transcribes), as in Agent-Orc and SpeechPulse.
 - **Nothing gets lost:** a history of the last dictations in the tray (a click copies one), a key that writes the last
   dictation again where the cursor is now, and a recording the STT-Suite could not transcribe waits in the tray to be
   sent again.
@@ -86,7 +86,13 @@ on any screen. The tray menu switches it off; then the tray icon alone shows the
 orange transcribing).
 
 The **badge** by the mouse pointer is Agent-Orc's dictation badge: the STT-Suite's logo in amber, above and right of the
-pointer's tip, moving with it while a dictation runs. The pointer itself stays as it is. It can be switched off.
+pointer's tip, moving with it while a dictation runs: its bars move and its rim is red while it listens (red also where
+motion is reduced), it is still and grey while it transcribes. The pointer itself stays as it is. It can be switched
+off.
+
+The **sounds** come in an order that suits a headset too: the start sound plays to its end before the microphone opens,
+the end and cancel sounds only once it is closed (an open microphone turns many headsets to their telephone mode, where
+sounds come quiet, cut or with an echo).
 
 ## Settings
 

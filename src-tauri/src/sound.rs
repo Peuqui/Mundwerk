@@ -32,8 +32,10 @@ impl Player {
         Ok(Self { _stream: stream, handle })
     }
 
-    /// Play the sound for `cue` without waiting for it to end.
-    pub fn play(&self, sounds: &Sounds, cue: Cue) -> Result<(), String> {
+    /// Play the sound for `cue`; `to_end`: return only when it has ended (the start sound, before the microphone
+    /// opens: an open microphone turns a headset to its telephone mode, and the sound would come quiet, cut or with
+    /// an echo, and into the recording; Agent-Orc does it the same way).
+    pub fn play(&self, sounds: &Sounds, cue: Cue, to_end: bool) -> Result<(), String> {
         if !sounds.enabled {
             return Ok(());
         }
@@ -42,7 +44,12 @@ impl Player {
             Cue::Stop => &sounds.stop,
             Cue::Cancel => &sounds.cancel,
         };
-        self.start(source, sounds.volume_percent)?.detach();
+        let sink = self.start(source, sounds.volume_percent)?;
+        if to_end {
+            sink.sleep_until_end();
+        } else {
+            sink.detach();
+        }
         Ok(())
     }
 

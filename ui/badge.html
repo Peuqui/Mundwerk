@@ -9,7 +9,8 @@
 <body>
   <!-- Agent-Orc's dictation badge (its DictationBadge.vue): the STT-Suite's logo in a round badge, in the TTS-Suite
        logo's amber (the blue was too dark to see) and with a light rim; while a dictation is taken in, the bars rise
-       and fall like a level and the arcs glow; while it is transcribed, it stands still and grey. -->
+       and fall like a level, the arcs glow and the rim turns red (also where motion is reduced, so that it never looks
+       like resting); while it is transcribed, it stands still and grey. -->
   <svg id="badge" viewBox="0 0 512 512" aria-hidden="true">
     <defs>
       <linearGradient id="badgeWave" gradientUnits="userSpaceOnUse" x1="96" y1="116" x2="336" y2="396">
@@ -17,7 +18,7 @@
         <stop offset="1" stop-color="#b45309" />
       </linearGradient>
     </defs>
-    <circle cx="256" cy="256" r="244" fill="#0f172a" stroke="#94a3b8" stroke-width="24" />
+    <circle class="rim" cx="256" cy="256" r="244" fill="#0f172a" stroke-width="24" />
     <g fill="none" stroke="url(#badgeWave)" stroke-width="30" stroke-linecap="round">
       <line class="bar" x1="96" y1="226" x2="96" y2="286" />
       <line class="bar" x1="156" y1="176" x2="156" y2="336" />

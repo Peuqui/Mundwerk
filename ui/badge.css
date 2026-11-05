@@ -10,10 +10,13 @@ html, body { margin: 0; height: 100%; background: transparent; overflow: hidden;
 .bar:nth-child(4) { animation-delay: -0.75s; }
 .bar:nth-child(5) { animation-delay: -0.45s; }
 .arc { animation: glow 1.2s ease-in-out infinite; }
+.rim { stroke: #94a3b8; }
+/* Red while it listens (Peuqui), as Agent-Orc's accent. */
+.listening .rim { stroke: #ef4444; }
 .arc.far { animation-delay: -0.6s; }
 /* With the shadow of #badge, which would otherwise win over the grey. */
-#badge.still { filter: grayscale(1) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5)); opacity: 0.6; }
-.still .bar, .still .arc { animation: none; }
+#badge.transcribing { filter: grayscale(1) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5)); opacity: 0.6; }
+.transcribing .bar, .transcribing .arc { animation: none; }
 @media (prefers-reduced-motion: reduce) {
   .bar, .arc { animation: none; }
 }

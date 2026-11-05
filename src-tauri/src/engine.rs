@@ -148,9 +148,11 @@ fn record(shared: &Shared, actions: &Receiver<Action>, reporter: &Reporter) {
             None
         }
     };
-    let play = |cue| {
+    let play = |cue, to_end| {
         if let Some(player) = &player {
-            if let Err(error) = player.play(&lock(&shared.config).sounds, cue) {
+            // A copy: waiting for a sound's end must not hold the settings.
+            let sounds = lock(&shared.config).sounds.clone();
+            if let Err(error) = player.play(&sounds, cue, to_end) {
                 reporter.report(Status::Error(error));
             }
         }
@@ -172,9 +174,10 @@ fn record(shared: &Shared, actions: &Receiver<Action>, reporter: &Reporter) {
                     let config = lock(&shared.config);
                     (config.recording.microphone.clone(), fraction(config.recording.silence_level_percent))
                 };
+                // The ping to its end first, then the microphone; pong and break only once it is closed.
+                play(Cue::Start, true);
                 match audio::start(&microphone, silence_level) {
                     Ok(recording) => {
-                        play(Cue::Start);
                         current = Some(recording);
                         reporter.report(Status::Listening);
                     }
@@ -188,7 +191,7 @@ fn record(shared: &Shared, actions: &Receiver<Action>, reporter: &Reporter) {
             Action::Stop => {
                 if let Some(recording) = current.take() {
                     let (samples, sample_rate) = recording.finish();
-                    play(Cue::Stop);
+                    play(Cue::Stop, false);
                     shared.queue(Job::Transcribe(Audio { samples, sample_rate }));
                     reporter.report(Status::Transcribing);
                 }
@@ -200,7 +203,7 @@ fn record(shared: &Shared, actions: &Receiver<Action>, reporter: &Reporter) {
             }
             Action::Cancel => {
                 current.take();
-                play(Cue::Cancel);
+                play(Cue::Cancel, false);
                 reporter.report(shared.status());
             }
         }

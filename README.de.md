@@ -23,7 +23,8 @@ macOS und Linux zu laufen.
 - **Ersetzungsliste** für das, was die Erkennung falsch versteht, vor allem Namen: Varianten als ganze Wörter
   (`Komm mit | Kommit → commit`) oder ein regulärer Ausdruck.
 - **Overlay** neben der Stelle, an der du schreibst, und das **Logo der STT-Suite am Mauszeiger**, solange diktiert
-  wird (beim Zuhören bewegen sich seine Balken, beim Transkribieren wird es grau), wie bei Agent-Orc und SpeechPulse.
+  wird (beim Zuhören bewegen sich seine Balken und sein Rand ist rot, beim Transkribieren wird es grau), wie bei
+  Agent-Orc und SpeechPulse.
 - **Nichts geht verloren:** ein Verlauf der letzten Diktate im Infobereich (ein Klick kopiert eines), eine Taste, die das
   letzte Diktat noch einmal dorthin schreibt, wo der Cursor jetzt steht, und eine Aufnahme, die die STT-Suite nicht
   transkribieren konnte, wartet im Infobereich darauf, erneut gesendet zu werden.
@@ -91,7 +92,13 @@ Platz, mit der Maus verschiebbar, auf jedem Bildschirm. Im Menü des Infobereich
 das Symbol den Zustand (blau bereit, rot hört zu, orange transkribiert).
 
 Das **Logo am Mauszeiger** ist das Diktat-Abzeichen von Agent-Orc: das Logo der STT-Suite in Bernstein, oben rechts an der
-Spitze des Zeigers, und es wandert mit, solange diktiert wird. Der Mauszeiger selbst bleibt, wie er ist. Abschaltbar.
+Spitze des Zeigers, und es wandert mit, solange diktiert wird: Beim Zuhören bewegen sich seine Balken und sein Rand ist
+rot (rot auch, wo Bewegung abgeschaltet ist), beim Transkribieren steht es still und grau. Der Mauszeiger selbst bleibt,
+wie er ist. Abschaltbar.
+
+Die **Töne** kommen in einer Reihenfolge, die auch einem Headset passt: Der Startton spielt bis zu seinem Ende, bevor das
+Mikrofon aufgeht, End- und Abbruchton erst, wenn es geschlossen ist (ein offenes Mikrofon schaltet viele Headsets in den
+Telefonat-Modus, dann kommen Töne leise, abgeschnitten oder hallend).
 
 ## Einstellungen
 
