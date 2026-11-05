@@ -43,7 +43,8 @@ silence_level_percent = 1
 
 [sounds]
 enabled = true
-# builtin:<name> = a sound that comes with Mundwerk (ping, pong, break: the Echo Dot's), otherwise a WAV file.
+# builtin:<name> = a sound that comes with Mundwerk (the Echo Dot's ping, pong and break, and its notification sounds
+# ding_dong and dong_ding), otherwise a WAV file.
 start = "builtin:ping"
 stop = "builtin:pong"
 cancel = "builtin:break"
@@ -83,6 +84,11 @@ replacement = "VS Code"
 # floating = a small window that shows listening and transcribing, moved anywhere with the mouse (it remembers
 # where); tray_only = only the tray icon shows it.
 mode = "floating"
+# near_text = next to where you write: below and right of the text cursor, or of the mouse pointer for a program that
+# does not tell Windows where its text cursor is (browsers, many others); fixed = where it was moved last.
+placement = "near_text"
+# While listening, the mouse pointer carries a red microphone (Windows), so you see that a dictation runs.
+pointer = true
 opacity_percent = 90
 # How long an error stays in the overlay and the tray tooltip.
 error_shown_s = 6

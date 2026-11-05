@@ -5,12 +5,12 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
-use mundwerk_core::config::OverlayMode;
+use mundwerk_core::config::{OverlayMode, Placement};
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager};
 
 use crate::engine::{lock, Shared};
-use crate::{texts, tray, OVERLAY};
+use crate::{place, pointer, texts, tray, OVERLAY};
 
 /// The event the overlay listens to.
 pub const STATUS_EVENT: &str = "mundwerk://status";
@@ -60,9 +60,24 @@ impl Reporter {
 }
 
 fn show(app: &AppHandle, status: &Status) {
-    let floating =
-        app.try_state::<Arc<Shared>>().is_some_and(|shared| lock(&shared.config).overlay.mode == OverlayMode::Floating);
+    let Some(settings) = app.try_state::<Arc<Shared>>().map(|shared| lock(&shared.config).overlay.clone()) else {
+        return;
+    };
+    let floating = settings.mode == OverlayMode::Floating;
+    if *status == Status::Listening && settings.pointer {
+        pointer::listening();
+    } else if *status != Status::Listening {
+        pointer::restore();
+    }
     if let Some(overlay) = app.get_webview_window(OVERLAY) {
+        if *status == Status::Listening && floating && settings.placement == Placement::NearText {
+            let place = overlay.outer_size().ok().and_then(|size| place::near_text(app, size));
+            if let Some(position) = place {
+                if let Err(error) = overlay.set_position(position) {
+                    log::error!("overlay position: {error}");
+                }
+            }
+        }
         if let Err(error) = overlay.emit(STATUS_EVENT, status) {
             log::error!("overlay: {error}");
         }

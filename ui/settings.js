@@ -269,7 +269,8 @@ function soundField(key) {
   const builtin = sounds[key].startsWith(BUILTIN_PREFIX)
   const state = { kind: builtin ? sounds[key].slice(BUILTIN_PREFIX.length) : OWN_FILE }
   const path = h('input', { type: 'text', value: builtin ? '' : sounds[key], placeholder: t('sounds.path'), hidden: builtin, oninput: (event) => { sounds[key] = event.target.value } })
-  const options = [['ping', t('sounds.ping')], ['pong', t('sounds.pong')], ['break', t('sounds.break')], [OWN_FILE, t('sounds.own_file')]]
+  const options = [['ping', t('sounds.ping')], ['pong', t('sounds.pong')], ['break', t('sounds.break')],
+    ['dong_ding', t('sounds.dong_ding')], ['ding_dong', t('sounds.ding_dong')], [OWN_FILE, t('sounds.own_file')]]
   const select = choice(state, 'kind', options, () => {
     path.hidden = state.kind !== OWN_FILE
     sounds[key] = state.kind === OWN_FILE ? path.value : BUILTIN_PREFIX + state.kind
@@ -328,6 +329,8 @@ function display() {
   return section(t('display.title'), null,
     h('div', { class: 'fields' },
       field(t('display.mode'), choice(config.overlay, 'mode', [['floating', t('display.floating')], ['tray_only', t('display.tray_only')]])),
+      field(t('display.placement'), choice(config.overlay, 'placement', [['near_text', t('display.near_text')], ['fixed', t('display.fixed')]]), t('display.placement_hint')),
+      field(t('display.pointer'), check(config.overlay, 'pointer', t('display.pointer_text'))),
       field(t('display.opacity'), percent(config.overlay, 'opacity_percent', 10)),
       field(t('display.error_shown'), h('span', { class: 'inline' }, number(config.overlay, 'error_shown_s'), 's'))))
 }

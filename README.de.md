@@ -17,7 +17,9 @@ Prozessor transkribiert. Auf dem Rechner, an dem diktiert wird, belegt Mundwerk 
    Auslöser wählbar: **gedrückt halten** (Aufnahme, solange gehalten) oder **an/aus** (einmal drücken zum Start, einmal
    zum Ende). Wahlweise erreicht der Druck das Programm darunter nicht, damit eine Seitentaste nicht zugleich im Browser
    zurückblättert. Ein kurzer Fehldruck (unter `min_press_ms`) wird verworfen, Esc bricht ab.
-2. Ein **Ton** markiert Start, Ende und Abbruch: dieselben wie beim Echo Dot (ping, pong, break aus FreeEchoDot2).
+2. Ein **Ton** markiert Start, Ende und Abbruch: dieselben wie beim Echo Dot (ping, pong, break aus FreeEchoDot2), zur
+   Wahl auch dessen Benachrichtigungstöne Dong-Ding und Ding-Dong oder eine eigene WAV-Datei; im Einstellungsfenster
+   lässt sich jeder vorab anhören.
 3. Die Aufnahme geht als WAV an `POST /transcribe` der STT-Suite, standardmäßig mit `device=auto`. Mehrere Server
    werden **der Reihe nach** versucht, etwa zuerst die Direktverbindung, dann das Heimnetz. Weitergegangen wird nur,
    wenn ein Server nicht erreichbar ist. Antwortet einer mit einem Fehler, wird dieser angezeigt.
@@ -30,10 +32,14 @@ Prozessor transkribiert. Auf dem Rechner, an dem diktiert wird, belegt Mundwerk 
 6. Der **Verlauf** im Menü des Infobereichs hält die letzten Diktate. Ein Klick kopiert eines, wenn es im falschen Feld
    gelandet ist.
 
-Ein kleines **Overlay** zeigt „hört zu“ und „transkribiert“. Es ist mit der Maus frei verschiebbar, auch auf andere
-Bildschirme, merkt sich seinen Platz und nimmt dem Textfeld nie den Fokus. Im Menü des Infobereichs lässt es sich
-abschalten, dann zeigt nur das Symbol (blau bereit, rot hört zu, orange transkribiert) den Zustand. Mit dem System
-starten: einstellbar.
+Ein kleines **Overlay** zeigt „hört zu“ und „transkribiert“ und nimmt dem Textfeld nie den Fokus. Standardmäßig
+erscheint es dort, wo man schreibt: unten rechts neben der Schreibmarke, auf deren Bildschirm. Viele Programme (Browser,
+Electron und andere, die ihren Text selbst zeichnen) sagen Windows nicht, wo ihre Schreibmarke steht; dann steht es neben
+dem Mauszeiger. Alternativ ein fester Platz, mit der Maus verschiebbar, auch auf andere Bildschirme. Im Menü des
+Infobereichs lässt es sich abschalten, dann zeigt nur das Symbol (blau bereit, rot hört zu, orange transkribiert) den
+Zustand. Solange Mundwerk zuhört, trägt der **Mauszeiger** ein rotes Mikrofon (Windows; abschaltbar); die Zeiger des
+Systems kehren danach zurück, auch beim Beenden und beim Start nach einem Absturz. Mit dem System starten:
+einstellbar.
 
 Aus, solange nicht anders eingestellt: Anhalten nach Stille, Höchstdauer einer Aufnahme, Enter am Ende.
 
@@ -69,7 +75,8 @@ Sicherheit).
   `ToUnicodeEx` auf und zerstört damit die Tottasten (^ ´ `). Unter macOS und Linux (X11) rdev. Unter Wayland sperrt
   das System globale Tasten und das Tippen in fremde Fenster; dort braucht es später einen eigenen Weg.
 - `assets/sounds`: ping, pong und break aus FreeEchoDot2 (`audio_samples/`, Stand 37190a9, erzeugt mit
-  `tools/gen_notify_sounds.py`).
+  `tools/gen_notify_sounds.py`), Ding-Dong und Dong-Ding ebenfalls von dort, ebenfalls algorithmisch erzeugt.
+- `tools/gen_pointer.py`: zeichnet den Mauszeiger beim Zuhören (`src-tauri/icons/pointer-listening.*`).
 
 ## Entwickeln
 

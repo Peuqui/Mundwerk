@@ -8,6 +8,8 @@ mod audio;
 mod engine;
 mod hook;
 mod insert;
+mod place;
+mod pointer;
 mod settings;
 mod sound;
 mod status;
@@ -20,7 +22,7 @@ use std::sync::{Arc, Mutex};
 use mundwerk_core::capture::{Capture, Update};
 use mundwerk_core::controller::Event;
 
-use mundwerk_core::config::Config;
+use mundwerk_core::config::{Config, Placement};
 use mundwerk_core::i18n::LanguageSetting;
 use tauri::{
     AppHandle, Emitter, LogicalSize, Manager, PhysicalPosition, RunEvent, WebviewUrl, WebviewWindowBuilder, WindowEvent,
@@ -82,11 +84,11 @@ fn main() {
         })
         .build(tauri::generate_context!())
         .unwrap_or_else(|error| panic!("Mundwerk cannot start: {error}"));
-    app.run(|_, event| {
-        // A tray app: closing the settings window does not end it, only "Beenden" does.
-        if let RunEvent::ExitRequested { api, code: None, .. } = event {
-            api.prevent_exit();
-        }
+    app.run(|_, event| match event {
+        // A tray app: closing the settings window does not end it, only quitting from the tray does.
+        RunEvent::ExitRequested { api, code: None, .. } => api.prevent_exit(),
+        RunEvent::Exit => pointer::reset(),
+        _ => {}
     });
 }
 
@@ -94,6 +96,7 @@ fn setup(app: &AppHandle) -> Result<(), String> {
     let folder = app.path().app_config_dir().map_err(|error| error.to_string())?;
     let config_path = folder.join(CONFIG_FILE);
     app.manage(Startup { config_path: config_path.clone() });
+    pointer::reset();
     let reporter = Reporter::new(app.clone());
     app.manage(reporter.clone());
     let capture: CaptureState = Arc::new(Mutex::new(Capture::default()));
@@ -194,8 +197,13 @@ fn create_overlay(app: &AppHandle, config_path: &std::path::Path) -> tauri::Resu
         }
     }
     let keeper = PositionKeeper::new(config_path);
+    let app = app.clone();
     overlay.on_window_event(move |event| {
-        if let WindowEvent::Moved(position) = event {
+        // Only a fixed place is remembered: next to the text the overlay is moved by Mundwerk itself.
+        let fixed = app
+            .try_state::<Arc<Shared>>()
+            .is_some_and(|shared| lock(&shared.config).overlay.placement == Placement::Fixed);
+        if let (WindowEvent::Moved(position), true) = (event, fixed) {
             keeper.moved(*position);
         }
     });

@@ -17,7 +17,8 @@ On the machine you dictate at, Mundwerk takes no graphics memory.
    (records while held) or **toggle** (press once to start, once more to stop). Optionally the press does not reach the
    program below, so a side button does not also page back in the browser. A slip shorter than `min_press_ms` is thrown
    away; Escape cancels.
-2. A **sound** marks start, end and cancel: the Echo Dot's (ping, pong, break from FreeEchoDot2).
+2. A **sound** marks start, end and cancel: the Echo Dot's (ping, pong, break from FreeEchoDot2), or its notification
+   sounds dong-ding and ding-dong, or a WAV file of one's own; the settings window plays each to listen to it first.
 3. The recording goes as WAV to the STT-Suite's `POST /transcribe`, by default with `device=auto`. Several servers are
    tried **in order**, e.g. the direct cable first, the home network second; only a server that cannot be reached is
    skipped. One that answers with an error has answered, and that error is shown.
@@ -28,9 +29,13 @@ On the machine you dictate at, Mundwerk takes no graphics memory.
    gets a **space** before it, as in Agent-Orc. Optionally **Enter** at the end to send at once.
 6. The **history** in the tray menu keeps the last dictations; a click copies one that landed in the wrong field.
 
-A small **overlay** shows listening and transcribing. It can be moved anywhere with the mouse, other screens included,
-remembers its place and never takes the focus from the text field. The tray menu switches it off; then only the icon
-(blue ready, red listening, orange transcribing) shows the state. Starting with the system: a setting.
+A small **overlay** shows listening and transcribing and never takes the focus from the text field. By default it
+shows where one writes: below and right of the text cursor, on its screen. Many programs (browsers, Electron and others
+that draw their own text) do not tell Windows where their text cursor is; then it shows by the mouse pointer. Or a fixed
+place, moved with the mouse, other screens included. The tray menu switches it off; then only the icon (blue ready, red
+listening, orange transcribing) shows the state. While Mundwerk listens, the **mouse pointer** carries a red microphone
+(Windows; can be switched off); the system's pointers come back after, also on quitting and on a start after a crash.
+Starting with the system: a setting.
 
 Off unless set: stopping after silence, a maximum recording length, Enter at the end.
 
@@ -65,7 +70,8 @@ The STT-Suite needs its token for calls from another machine (`server.token`, se
   breaks the dead keys (^ ´ `). On macOS and Linux (X11) rdev. Under Wayland the system blocks global keys and typing
   into other windows; that needs its own way later.
 - `assets/sounds`: ping, pong and break from FreeEchoDot2 (`audio_samples/`, at 37190a9, made by
-  `tools/gen_notify_sounds.py`).
+  `tools/gen_notify_sounds.py`), ding-dong and dong-ding from there as well, made by algorithm too.
+- `tools/gen_pointer.py`: draws the mouse pointer while listening (`src-tauri/icons/pointer-listening.*`).
 
 ## Development
 

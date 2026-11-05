@@ -163,10 +163,20 @@ pub enum OverlayMode {
     TrayOnly,
 }
 
+/// Where the floating overlay shows.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Placement {
+    NearText,
+    Fixed,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Overlay {
     pub mode: OverlayMode,
+    pub placement: Placement,
+    pub pointer: bool,
     pub opacity_percent: u8,
     pub error_shown_s: u64,
 }
