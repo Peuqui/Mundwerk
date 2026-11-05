@@ -41,6 +41,8 @@ cancel_key = "Escape"
 # Stop by itself after this much silence / after this long; 0 = never.
 stop_after_silence_s = 0
 max_duration_s = 0
+# What counts as silence for stop_after_silence_s: the loudness (RMS, 0 to 1) of a tenth of a second below this.
+silence_level = 0.01
 
 [sounds]
 enabled = true
@@ -59,6 +61,8 @@ method = "type"
 space_between_dictations = true
 # Press Enter after the text (sends a chat message at once).
 press_enter = false
+# Pasting: how long the program gets to read the clipboard before what it held before is put back.
+clipboard_restore_delay_ms = 200
 
 # Programs that need the other method, by process name, e.g. a remote desktop or a terminal.
 # [[insert.per_program]]
@@ -76,11 +80,12 @@ variants = ["Falscode", "VS-Code"]
 replacement = "VS Code"
 
 [overlay]
-# floating = a small window that shows listening and transcribing; tray_only = only the tray icon shows it.
+# floating = a small window that shows listening and transcribing, moved anywhere with the mouse (it remembers
+# where); tray_only = only the tray icon shows it.
 mode = "floating"
-# Where the floating window was left (screen coordinates, any monitor); empty = bottom centre of the main screen.
-position = []
 opacity = 0.9
+# How long an error stays in the overlay and the tray tooltip.
+error_shown_s = 6
 
 [history]
 # How many dictations the history keeps (tray menu: paste again, copy).

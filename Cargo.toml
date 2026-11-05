@@ -1,6 +1,8 @@
 [workspace]
 resolver = "2"
-members = ["crates/mundwerk-core"]
+members = ["crates/mundwerk-core", "src-tauri"]
+# Plain `cargo test` on any machine: the app needs the system libraries of its platform (see the README).
+default-members = ["crates/mundwerk-core"]
 
 [workspace.package]
 version = "0.1.0"

@@ -1,0 +1,34 @@
+[package]
+name = "mundwerk"
+description = "Dictate into any text field, transcribed by the STT-Suite"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+mundwerk-core = { path = "../crates/mundwerk-core" }
+tauri = { version = "2", features = ["tray-icon", "image-png"] }
+tauri-plugin-autostart = "2"
+tauri-plugin-single-instance = "2"
+cpal = "0.15"
+enigo = "0.3"
+arboard = "3"
+rodio = { version = "0.20", default-features = false, features = ["wav"] }
+active-win-pos-rs = "0.9"
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Windows: a low-level hook of its own. rdev's calls ToUnicodeEx on every key, which breaks the dead keys (^ ´ `).
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.62", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging"] }
+
+[target.'cfg(not(windows))'.dependencies]
+rdev = { version = "0.5", features = ["unstable_grab"] }
+
+[lints]
+workspace = true

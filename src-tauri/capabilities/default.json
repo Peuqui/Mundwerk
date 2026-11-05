@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "The overlay listens to the state and can be dragged; the settings window calls Mundwerk's commands.",
+  "windows": ["overlay", "settings"],
+  "permissions": ["core:default", "core:window:allow-start-dragging"]
+}

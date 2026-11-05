@@ -1,0 +1,19 @@
+:root {
+  --pill: #1d2330;
+  --text: #f2f4f8;
+  --listening: #e5484d;
+  --transcribing: #f5a524;
+  --error: #ff6b6b;
+}
+html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; }
+body { display: flex; align-items: center; justify-content: center; font: 600 15px/1.2 system-ui, "Segoe UI", sans-serif; }
+#pill {
+  display: flex; align-items: center; gap: 10px; box-sizing: border-box; height: 44px; max-width: 100%;
+  padding: 0 18px; border-radius: 22px; background: var(--pill); color: var(--text); cursor: grab; user-select: none;
+}
+#text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#dot { flex: 0 0 auto; width: 12px; height: 12px; border-radius: 50%; }
+.listening #dot { background: var(--listening); animation: pulse 1s ease-in-out infinite; }
+.transcribing #dot { background: var(--transcribing); animation: pulse 0.6s ease-in-out infinite; }
+.error #dot { background: var(--error); }
+@keyframes pulse { 50% { opacity: 0.35; } }

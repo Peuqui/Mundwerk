@@ -1,0 +1,4 @@
+# The C runtime cargo-xwin brings for the Windows build has no debug info files (PDB) with it; lld-link would
+# report every one of them (LNK4099). Nothing is missing for Mundwerk's own debug info.
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "link-arg=/ignore:4099"]

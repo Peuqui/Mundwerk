@@ -1,6 +1,6 @@
 //! Mundwerk's logic without a user interface, testable on any machine: the settings, the triggers as text,
 //! when a dictation starts and ends, the replacement list, the space between dictations, the call to the STT-Suite,
-//! the history, the WAV file.
+//! the history, the WAV file, the Windows key codes.
 
 pub mod config;
 pub mod controller;
@@ -10,6 +10,7 @@ pub mod spacing;
 pub mod stt;
 pub mod trigger;
 pub mod wav;
+pub mod windows_keys;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {

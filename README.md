@@ -7,8 +7,9 @@ On the machine you dictate at, Mundwerk takes no graphics memory.
 
 [Deutsche Version](README.de.md)
 
-> Status: being built. Done: the core (settings, triggers, replacement list, the space between dictations, the call to
-> the STT-Suite with fallback, history, WAV) with tests; the user interface (Tauri) follows.
+> Status: first version. The core (settings, triggers, replacement list, the space between dictations, the call to the
+> STT-Suite with fallback, history) is tested, the STT call also live. The Windows app builds and passes Clippy but has
+> not been tried on Windows yet.
 
 ## How it works
 
@@ -25,37 +26,54 @@ On the machine you dictate at, Mundwerk takes no graphics memory.
 5. The text goes into the **focused field**: typed (Unicode, umlauts included, the clipboard untouched) or pasted
    (Ctrl+V, then the clipboard is put back), settable per program. A dictation that follows another in the same window
    gets a **space** before it, as in Agent-Orc. Optionally **Enter** at the end to send at once.
-6. The **history** keeps the last dictations: paste again or copy one that landed in the wrong field.
+6. The **history** in the tray menu keeps the last dictations; a click copies one that landed in the wrong field.
 
-A small **overlay** shows listening and transcribing; it can be moved anywhere, other screens included, and never takes
-the focus. Or only the tray icon shows the state. Starting with the system: a setting.
+A small **overlay** shows listening and transcribing. It can be moved anywhere with the mouse, other screens included,
+remembers its place and never takes the focus from the text field. The tray menu switches it off; then only the icon
+(blue ready, red listening, orange transcribing) shows the state. Starting with the system: a setting.
 
 Off unless set: stopping after silence, a maximum recording length, Enter at the end.
 
 ## Settings
 
 Every setting with its default is in [`crates/mundwerk-core/default_config.toml`](crates/mundwerk-core/default_config.toml).
-On the first start Mundwerk writes it to the user's settings folder (on Windows `%APPDATA%\Mundwerk\config.toml`); from
-then on that file counts. Every field must be in it, and an unknown one is an error, so a typo does not get lost quietly.
+On the first start Mundwerk writes it to the user's settings folder (on Windows `%APPDATA%\de.peuqui.mundwerk\config.toml`);
+from then on that file counts. Every field must be in it, and an unknown one is an error, so a typo does not get lost
+quietly. The settings window (tray menu) edits that file as text, comments and all; saving checks it and puts it into
+effect at once. If it cannot work at the start, Mundwerk does not run on stand-ins: it opens the settings window with
+the error and starts anew after saving.
 
 The STT-Suite needs its token for calls from another machine (`server.token`, see its Security section).
 
 ## Layout
 
-- `crates/mundwerk-core`: the logic without a user interface, testable on any machine (`cargo test`).
-- The Tauri app (follows): tray, overlay, settings window, keyboard and mouse hooks, microphone, typing. Built for
-  Windows, and without detours for Linux (X11) and macOS as far as possible. Under Wayland the system blocks global keys
-  and typing into other windows; that needs its own way later.
+- `crates/mundwerk-core`: the logic without a user interface, testable on any machine (`cargo test -p mundwerk-core`).
+- `src-tauri`: the app (tray, overlay, settings window, hook, microphone, sounds, typing) and `ui/` its pages (HTML, CSS,
+  JavaScript without a build step). On Windows a low-level hook of its own: rdev calls `ToUnicodeEx` on every key and so
+  breaks the dead keys (^ ´ `). On macOS and Linux (X11) rdev. Under Wayland the system blocks global keys and typing
+  into other windows; that needs its own way later.
 - `assets/sounds`: ping, pong and break from FreeEchoDot2 (`audio_samples/`, at 37190a9, made by
   `tools/gen_notify_sounds.py`).
 
 ## Development
 
 ```
-cargo test
-cargo clippy --all-targets
+cargo test -p mundwerk-core
+cargo clippy -p mundwerk-core --all-targets
 cargo fmt --check
 ```
+
+The Windows app is built on Linux with [cargo-xwin](https://github.com/rust-cross/cargo-xwin), which fetches the
+Windows libraries itself (`cargo install --locked cargo-xwin tauri-cli`, `rustup target add x86_64-pc-windows-msvc`;
+plus clang and llvm, here version 17 in `/usr/lib/llvm-17/bin`):
+
+```
+PATH="/usr/lib/llvm-17/bin:$PATH" cargo xwin clippy --target x86_64-pc-windows-msvc -p mundwerk
+cd src-tauri && PATH="/usr/lib/llvm-17/bin:$PATH" cargo tauri build --runner cargo-xwin --target x86_64-pc-windows-msvc --no-bundle
+```
+
+The result is `target/x86_64-pc-windows-msvc/release/mundwerk.exe`, a single file without installation (Windows 10 and
+11 have WebView2). An installer (leave out `--no-bundle`) also needs `nsis`.
 
 Against a running STT-Suite (skipped otherwise):
 

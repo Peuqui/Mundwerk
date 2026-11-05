@@ -68,6 +68,7 @@ pub struct Recording {
     pub cancel_key: String,
     pub stop_after_silence_s: u64,
     pub max_duration_s: u64,
+    pub silence_level: f32,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -93,6 +94,7 @@ pub struct Insert {
     pub method: InsertMethod,
     pub space_between_dictations: bool,
     pub press_enter: bool,
+    pub clipboard_restore_delay_ms: u64,
     // An empty list is written as nothing at all; the field may then be missing from the file.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub per_program: Vec<ProgramMethod>,
@@ -139,9 +141,8 @@ pub enum OverlayMode {
 #[serde(deny_unknown_fields)]
 pub struct Overlay {
     pub mode: OverlayMode,
-    /// `[x, y]` in screen coordinates, or empty for the default place.
-    pub position: Vec<i32>,
     pub opacity: f32,
+    pub error_shown_s: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -181,15 +182,30 @@ impl Config {
         Self::parse(&std::fs::read_to_string(path)?)
     }
 
-    /// Write the settings to `path` (the settings window saves this way).
+    /// Check `text` and write it to `path` as it stands, comments and all (the settings window saves this way).
     ///
     /// # Errors
-    /// The settings cannot work, or the file cannot be written.
-    pub fn save(&self, path: &Path) -> Result<(), Error> {
-        self.validate()?;
-        let text = toml::to_string_pretty(self).map_err(|error| Error::Config(error.to_string()))?;
+    /// [`Config::parse`] refuses the text, or the file cannot be written.
+    pub fn save_text(text: &str, path: &Path) -> Result<Self, Error> {
+        let config = Self::parse(text)?;
         std::fs::write(path, text)?;
-        Ok(())
+        Ok(config)
+    }
+
+    /// Switch the overlay in the file at `path`, changing only that value (comments and layout stay).
+    ///
+    /// # Errors
+    /// The file cannot be read or written, or is no valid settings file.
+    pub fn save_overlay_mode(path: &Path, mode: OverlayMode) -> Result<Self, Error> {
+        let text = std::fs::read_to_string(path)?;
+        let mut document: toml_edit::DocumentMut =
+            text.parse().map_err(|error: toml_edit::TomlError| Error::Config(error.to_string()))?;
+        let name = match mode {
+            OverlayMode::Floating => "floating",
+            OverlayMode::TrayOnly => "tray_only",
+        };
+        document["overlay"]["mode"] = toml_edit::value(name);
+        Self::save_text(&document.to_string(), path)
     }
 
     /// What the file cannot say through its types: values that would make Mundwerk fail later.
@@ -205,14 +221,14 @@ impl Config {
         }
         Trigger::parse(&self.recording.cancel_key)?;
         Replacer::new(&self.replacements)?;
+        if !(0.0..=1.0).contains(&self.recording.silence_level) {
+            return Err(Error::Config("recording.silence_level: between 0 and 1".into()));
+        }
         if !(0.0..=1.0).contains(&self.sounds.volume) {
             return Err(Error::Config("sounds.volume: between 0 and 1".into()));
         }
         if !(0.1..=1.0).contains(&self.overlay.opacity) {
             return Err(Error::Config("overlay.opacity: between 0.1 and 1".into()));
-        }
-        if !(self.overlay.position.is_empty() || self.overlay.position.len() == 2) {
-            return Err(Error::Config("overlay.position: [x, y] or []".into()));
         }
         Ok(())
     }
@@ -236,6 +252,31 @@ mod tests {
         let config = Config::parse(DEFAULT_CONFIG).unwrap();
         let again = Config::parse(&toml::to_string_pretty(&config).unwrap()).unwrap();
         assert_eq!(config, again);
+    }
+
+    #[test]
+    fn saving_keeps_the_text_and_refuses_a_broken_one() {
+        let folder = std::env::temp_dir().join(format!("mundwerk-test-{}", std::process::id()));
+        std::fs::create_dir_all(&folder).unwrap();
+        let path = folder.join("config.toml");
+        Config::save_text(DEFAULT_CONFIG, &path).unwrap();
+        assert_eq!(std::fs::read_to_string(&path).unwrap(), DEFAULT_CONFIG);
+        assert!(Config::save_text("[server]\n", &path).is_err());
+        assert_eq!(std::fs::read_to_string(&path).unwrap(), DEFAULT_CONFIG);
+        std::fs::remove_dir_all(&folder).unwrap();
+    }
+
+    #[test]
+    fn the_overlay_switch_changes_only_its_value() {
+        let folder = std::env::temp_dir().join(format!("mundwerk-overlay-{}", std::process::id()));
+        std::fs::create_dir_all(&folder).unwrap();
+        let path = folder.join("config.toml");
+        std::fs::write(&path, DEFAULT_CONFIG).unwrap();
+        let config = Config::save_overlay_mode(&path, OverlayMode::TrayOnly).unwrap();
+        assert_eq!(config.overlay.mode, OverlayMode::TrayOnly);
+        let written = std::fs::read_to_string(&path).unwrap();
+        assert_eq!(written, DEFAULT_CONFIG.replace("mode = \"floating\"", "mode = \"tray_only\""));
+        std::fs::remove_dir_all(&folder).unwrap();
     }
 
     #[test]
