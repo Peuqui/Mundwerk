@@ -20,8 +20,8 @@ use crate::status::{Reporter, Status};
 use crate::{texts, Startup};
 
 pub const SETTINGS: &str = "settings";
-/// The event that brings the settings window a trigger taken live.
-pub const CAPTURED_EVENT: &str = "mundwerk://captured";
+/// The event that tells the settings window how a live capture goes (mundwerk_core::capture::Update).
+pub const CAPTURE_EVENT: &str = "mundwerk://capture";
 const SETTINGS_PAGE: &str = "settings.html";
 const POSITION_FILE: &str = "overlay-position.json";
 /// The overlay is saved once it has stood still this long (moving it reports every pixel).
@@ -101,7 +101,7 @@ pub fn microphones() -> Result<Vec<String>, String> {
     Ok(devices.filter_map(|device| device.name().ok()).collect())
 }
 
-/// The next key, combination or mouse button becomes a trigger ([`CAPTURED_EVENT`]); it is not passed on.
+/// The next key, combination or mouse button becomes a trigger ([`CAPTURE_EVENT`]); it is not passed on.
 // Tauri hands a command its arguments by value.
 #[allow(clippy::needless_pass_by_value)]
 #[tauri::command]

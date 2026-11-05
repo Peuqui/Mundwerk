@@ -47,6 +47,16 @@ button.listening { background: var(--accent); border-color: var(--accent); color
 .row .grow { flex: 1; min-width: 140px; }
 .add { margin-top: 10px; }
 
+.trigger { flex: 1; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-width: 260px; }
+.caps { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.plus { color: var(--muted); }
+.note { color: var(--error); font-size: 12px; }
+.row select, .row input[type="text"] { width: auto; }
+.explain { margin: 4px 0 12px; color: var(--muted); font-size: 13px; }
+.explain p { margin: 0 0 6px; }
+.explain b { color: var(--text); font-weight: 600; }
+kbd.waiting { border-style: dashed; color: var(--accent); font-weight: 400; animation: blink 1.2s ease-in-out infinite; }
+@keyframes blink { 50% { opacity: 0.45; } }
 kbd { display: inline-block; min-width: 2em; padding: 3px 9px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 6px; background: var(--key); font: 600 13px/1.4 ui-monospace, Consolas, monospace; text-align: center; }
 kbd.empty { color: var(--muted); font-weight: 400; }
 

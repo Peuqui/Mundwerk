@@ -17,7 +17,7 @@ mod tray;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
-use mundwerk_core::capture::Capture;
+use mundwerk_core::capture::{Capture, Update};
 use mundwerk_core::controller::Event;
 
 use mundwerk_core::config::Config;
@@ -27,7 +27,7 @@ use tauri::{
 use tauri_plugin_autostart::MacosLauncher;
 
 use crate::engine::{lock, Shared};
-use crate::settings::{CaptureState, PositionKeeper, CAPTURED_EVENT, SETTINGS};
+use crate::settings::{CaptureState, PositionKeeper, CAPTURE_EVENT};
 use crate::status::{Reporter, Status};
 
 pub const OVERLAY: &str = "overlay";
@@ -98,13 +98,18 @@ fn setup(app: &AppHandle) -> Result<(), String> {
     Ok(())
 }
 
-/// Every press goes to a running capture first (the settings window gets the trigger), then to the dictation.
+/// Every press goes to a running capture first (the settings window sees what is held, then the trigger), then to
+/// the dictation. Only the press that completes a capture is swallowed by it.
 fn start_hook(app: &AppHandle, capture: CaptureState, reporter: Reporter) -> Result<(), String> {
     let app = app.clone();
     let handler = move |event: &Event| {
-        if let Some(trigger) = lock(&capture).observe(event) {
-            let _ = app.emit_to(SETTINGS, CAPTURED_EVENT, trigger);
-            return true;
+        let update = lock(&capture).observe(event);
+        if let Some(update) = update {
+            let done = matches!(update, Update::Done(_));
+            let _ = app.emit(CAPTURE_EVENT, update);
+            if done {
+                return true;
+            }
         }
         app.try_state::<Arc<Shared>>().is_some_and(|shared| shared.press(event))
     };

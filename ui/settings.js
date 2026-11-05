@@ -4,7 +4,7 @@
 const { invoke } = window.__TAURI__.core
 const { listen } = window.__TAURI__.event
 
-const CAPTURED_EVENT = 'mundwerk://captured'
+const CAPTURE_EVENT = 'mundwerk://capture'
 const BUILTIN_PREFIX = 'builtin:'
 const BUILTIN_SOUNDS = [['ping', 'Ping (hoch)'], ['pong', 'Pong (tiefer)'], ['break', 'Break (hoch, dann tief)']]
 const OWN_FILE = 'file'
@@ -14,8 +14,23 @@ const message = document.getElementById('message')
 
 let config = null
 let microphones = []
-// The field a running capture writes into: { set(text) }, or null.
+// The field a running capture writes into: { update(update), cancel() }, or null.
 let capturing = null
+
+// The names on the keys of a German keyboard, for the names the settings use.
+const KEY_NAMES = {
+  Ctrl: 'Strg', Shift: 'Umschalt', Alt: 'Alt', Meta: 'Win', Space: 'Leertaste', Escape: 'Esc', Enter: 'Eingabe',
+  Backspace: 'Rücktaste', Delete: 'Entf', Insert: 'Einfg', Home: 'Pos1', End: 'Ende', PageUp: 'Bild ↑', PageDown: 'Bild ↓',
+  Up: '↑', Down: '↓', Left: '←', Right: '→', CapsLock: 'Feststelltaste', ScrollLock: 'Rollen', PrintScreen: 'Druck',
+  'Mouse:X1': 'Maus-Seitentaste hinten', 'Mouse:X2': 'Maus-Seitentaste vorne', 'Mouse:Middle': 'Mausrad-Klick',
+}
+
+// A trigger as key caps: "Ctrl+Shift+Alt+D" → [Strg] + [Umschalt] + [Alt] + [D].
+function keyCaps(trigger) {
+  if (!trigger) return [h('kbd', { class: 'empty' }, 'keine')]
+  const parts = trigger.startsWith('Mouse:') ? [trigger] : trigger.split('+')
+  return parts.flatMap((part, index) => [...(index ? [h('span', { class: 'plus' }, '+')] : []), h('kbd', {}, KEY_NAMES[part] ?? part)])
+}
 
 function say(words, kind) {
   message.textContent = words
@@ -38,8 +53,10 @@ function check(object, key, label) {
 }
 
 function choice(object, key, options, onchange) {
-  return h('select', { onchange: (event) => { object[key] = event.target.value; if (onchange) onchange() } },
-    options.map(([value, label]) => h('option', { value, selected: object[key] === value }, label)))
+  const select = h('select', { onchange: (event) => { object[key] = event.target.value; if (onchange) onchange() } },
+    options.map(([value, label]) => h('option', { value }, label)))
+  select.value = object[key]
+  return select
 }
 
 function percent(object, key, lowest = 0) {
@@ -57,28 +74,41 @@ function section(title, hint, ...content) {
   return h('section', {}, h('h2', {}, title), hint ? h('p', { class: 'hint' }, hint) : null, ...content)
 }
 
-// A key, combination or mouse button, taken live: the button arms the capture, the next press fills it.
+// A key, combination or mouse button, taken live: the button arms the capture; while it waits the keys held show up
+// as they are pressed, and the next key or mouse button completes it.
 function triggerField(object, key) {
-  const shown = h('kbd', {}, label(object[key]))
+  const caps = h('span', { class: 'caps' }, keyCaps(object[key]))
+  const note = h('span', { class: 'note' })
   const button = h('button', { type: 'button', class: 'small', onclick: () => arm() }, 'Aufnehmen')
-  function label(trigger) {
-    return trigger ? trigger.replace('Mouse:', 'Maus ') : 'keine'
-  }
   async function arm() {
     if (capturing) await disarm()
-    capturing = { set(trigger) { object[key] = trigger; shown.textContent = label(trigger); done() }, cancel: done }
-    button.textContent = 'Jetzt drücken … (Klick = Abbrechen)'
+    capturing = { update, cancel: () => { caps.replaceChildren(...keyCaps(object[key])); done() } }
+    caps.replaceChildren(h('kbd', { class: 'waiting' }, 'Taste drücken …'))
+    note.textContent = ''
+    button.textContent = 'Abbrechen'
     button.classList.add('listening')
     button.onclick = () => disarm()
     await invoke('start_capture')
   }
+  function update({ kind, trigger }) {
+    if (kind === 'done') {
+      object[key] = trigger
+      caps.replaceChildren(...keyCaps(trigger))
+      done()
+    } else if (kind === 'held') {
+      caps.replaceChildren(...(trigger ? [...keyCaps(trigger), h('span', { class: 'plus' }, '+ …')] : [h('kbd', { class: 'waiting' }, 'Taste drücken …')]))
+    } else {
+      note.textContent = `${trigger}: diese Taste geht nicht, bitte eine andere`
+    }
+  }
   function done() {
     capturing = null
+    note.textContent = ''
     button.textContent = 'Aufnehmen'
     button.classList.remove('listening')
     button.onclick = () => arm()
   }
-  return h('span', { class: 'inline' }, shown, button)
+  return h('span', { class: 'trigger' }, caps, button, note)
 }
 
 async function disarm() {
@@ -88,8 +118,8 @@ async function disarm() {
   running.cancel()
 }
 
-listen(CAPTURED_EVENT, ({ payload }) => {
-  if (capturing) capturing.set(payload)
+listen(CAPTURE_EVENT, ({ payload }) => {
+  if (capturing) capturing.update(payload)
 })
 
 // A list of rows: draw(item, index) gives a row's controls; add() a new item.
@@ -108,13 +138,17 @@ function rows(list, draw, add, addLabel) {
 // ── Sections ──────────────────────────────────────────────────────────────────────────────────────────────────
 
 function triggers() {
-  return section('Auslöser', 'Taste, Tastenkombination oder Maustaste (Mitte, Seitentasten). „Aufnehmen“ und dann die Taste drücken – auch eine Kombination, die die Maussoftware sendet.',
+  return section('Auslöser', null,
+    h('div', { class: 'explain' },
+      h('p', {}, h('b', {}, 'Aufnehmen'), ' klicken und dann die Taste, Tastenkombination oder Maustaste drücken. Die Tasten erscheinen, während du sie drückst.'),
+      h('p', {}, h('b', {}, 'Gedrückt halten'), ': Mundwerk hört zu, solange du die Taste hältst. ',
+        h('b', {}, 'An und aus'), ': ein Druck startet, der nächste beendet. Eine Maustaste mit Makro (etwa Strg + Umschalt + Alt + D) braucht „An und aus“, weil das Makro die Tasten sofort wieder loslässt.'),
+      h('p', {}, h('b', {}, 'Durchlassen'), ': normalerweise aus. Dann bekommt nur Mundwerk den Druck, die Seitentaste blättert also nicht zusätzlich im Browser zurück. An: das Programm, in dem du schreibst, bekommt ihn auch.')),
     ...rows(config.triggers, (trigger) => [
       triggerField(trigger, 'input'),
       choice(trigger, 'mode', [['hold', 'Gedrückt halten'], ['toggle', 'An und aus']]),
-      check(trigger, 'pass_through', 'auch ans Programm weitergeben'),
-      h('span', { class: 'grow' }),
-    ], () => ({ input: '', mode: 'hold', pass_through: false }), '+ Auslöser'))
+      check(trigger, 'pass_through', 'Durchlassen'),
+    ], () => ({ input: '', mode: 'toggle', pass_through: false }), '+ Auslöser'))
 }
 
 function server() {

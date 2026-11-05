@@ -64,6 +64,17 @@ pub struct Modifiers {
     pub meta: bool,
 }
 
+impl Modifiers {
+    /// The ones held, as the settings name them, in the order Ctrl, Shift, Alt, Meta.
+    #[must_use]
+    pub fn names(&self) -> Vec<&'static str> {
+        [(self.ctrl, "Ctrl"), (self.shift, "Shift"), (self.alt, "Alt"), (self.meta, "Meta")]
+            .into_iter()
+            .filter_map(|(held, name)| held.then_some(name))
+            .collect()
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Input {
     /// A key by its name: a letter `A`-`Z`, a digit `0`-`9` or one of [`NAMED_KEYS`].
@@ -117,15 +128,8 @@ impl std::fmt::Display for Trigger {
         match &self.input {
             Input::Mouse(button) => write!(formatter, "{MOUSE_PREFIX}{button}"),
             Input::Key(key) => {
-                for (held, name) in [
-                    (self.modifiers.ctrl, "Ctrl"),
-                    (self.modifiers.shift, "Shift"),
-                    (self.modifiers.alt, "Alt"),
-                    (self.modifiers.meta, "Meta"),
-                ] {
-                    if held {
-                        write!(formatter, "{name}+")?;
-                    }
+                for name in self.modifiers.names() {
+                    write!(formatter, "{name}+")?;
                 }
                 write!(formatter, "{key}")
             }
