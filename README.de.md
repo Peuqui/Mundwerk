@@ -45,9 +45,11 @@ sie in den Einstellungsordner des Benutzers (unter Windows `%APPDATA%\de.peuqui.
 diese Datei. Jedes Feld muss darin stehen, ein unbekanntes ist ein Fehler, damit sich ein Tippfehler nicht still
 verliert. Das Einstellungsfenster (Menü im Infobereich) ist ein Formular; Speichern prüft die Einstellungen, schreibt sie
 in die Datei (deren Kommentare bleiben) und setzt sie sofort in Kraft. Auslöser werden live aufgenommen: „Aufnehmen“, dann
-die Taste, Kombination oder Maustaste drücken. Das läuft über Mundwerks System-Hook, deshalb zählt auch eine Kombination,
-die die Software einer Maus sendet (etwa Strg+Shift+Alt+D auf einer Maustaste); links und rechts unterscheidet Mundwerk
-bei Strg, Shift und Alt nicht. Engine und Modell wählt die STT-Suite selbst, Mundwerk schickt nur Gerät und Sprache. Geht
+die Taste, Kombination oder Maustaste drücken; die Tasten erscheinen, während sie gedrückt werden. Tasten liest dabei das
+Einstellungsfenster selbst, denn solange es vorne ist, gibt Windows sie Mundwerks Tastatur-Hook nicht; Maustasten kommen
+vom Hook. Eine Kombination, die die Software einer Maus sendet (etwa Strg+Umschalt+Alt+D auf einer Seitentaste), zählt
+wie getippt; eine so belegte Seitentaste sieht Windows selbst nie, nur ihre Tasten. Weil ein Makro die Tasten sofort
+wieder loslässt, braucht sie „An und aus“. Links und rechts unterscheidet Mundwerk bei Strg, Umschalt und Alt nicht. Engine und Modell wählt die STT-Suite selbst, Mundwerk schickt nur Gerät und Sprache. Geht
 die Datei beim Start nicht, läuft Mundwerk nicht mit Ersatzwerten, sondern öffnet das Einstellungsfenster mit dem Fehler
 (dort lässt sich mit Standardwerten neu beginnen) und startet nach dem Speichern neu.
 

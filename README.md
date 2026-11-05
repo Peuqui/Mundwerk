@@ -41,8 +41,11 @@ On the first start Mundwerk writes it to the user's settings folder (on Windows 
 from then on that file counts. Every field must be in it, and an unknown one is an error, so a typo does not get lost
 quietly. The settings window (tray menu) is a form; saving checks the settings, writes them into the file (its comments
 stay) and puts them into effect at once. Triggers are taken live: "Aufnehmen", then press the key, combination or mouse
-button. That goes through Mundwerk's system hook, so a combination a mouse's software sends counts too (say
-Ctrl+Shift+Alt+D on a mouse button); Mundwerk does not tell left from right Ctrl, Shift and Alt. The STT-Suite chooses
+button; the keys show up while they are pressed. The settings window reads keys itself, since Windows does not hand them
+to Mundwerk's keyboard hook while that window is in front; mouse buttons come from the hook. A combination a mouse's
+software sends (say Ctrl+Shift+Alt+D on a side button) counts like typed keys; Windows never sees a side button set up
+that way, only its keys. As a macro lets go of the keys at once, it needs "toggle". Mundwerk does not tell left from
+right Ctrl, Shift and Alt. The STT-Suite chooses
 engine and model itself; Mundwerk sends only device and language. If the file cannot work at the start, Mundwerk does not
 run on stand-ins: it opens the settings window with the error (where one can start again from the defaults) and starts
 anew after saving.
