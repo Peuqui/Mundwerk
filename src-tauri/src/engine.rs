@@ -9,7 +9,7 @@ use std::sync::mpsc::{self, Receiver, RecvTimeoutError, Sender};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use std::time::{Duration, Instant};
 
-use mundwerk_core::config::Config;
+use mundwerk_core::config::{fraction, Config};
 use mundwerk_core::controller::{Action, Controller, Event};
 use mundwerk_core::history::{Entry, History};
 use mundwerk_core::replace::Replacer;
@@ -133,7 +133,7 @@ fn record(shared: &Shared, actions: &Receiver<Action>, jobs: &Sender<Job>, repor
             Action::Start => {
                 let (microphone, silence_level) = {
                     let config = lock(&shared.config);
-                    (config.recording.microphone.clone(), config.recording.silence_level)
+                    (config.recording.microphone.clone(), fraction(config.recording.silence_level_percent))
                 };
                 match audio::start(&microphone, silence_level) {
                     Ok(recording) => {

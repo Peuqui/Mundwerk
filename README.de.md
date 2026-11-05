@@ -43,9 +43,13 @@ Alle Einstellungen mit ihren Standardwerten stehen in
 [`crates/mundwerk-core/default_config.toml`](crates/mundwerk-core/default_config.toml). Beim ersten Start schreibt Mundwerk
 sie in den Einstellungsordner des Benutzers (unter Windows `%APPDATA%\de.peuqui.mundwerk\config.toml`), ab dann gilt
 diese Datei. Jedes Feld muss darin stehen, ein unbekanntes ist ein Fehler, damit sich ein Tippfehler nicht still
-verliert. Das Einstellungsfenster (Menü im Infobereich) bearbeitet diese Datei als Text, mit allen Kommentaren; Speichern
-prüft sie und setzt sie sofort in Kraft. Geht sie beim Start nicht, läuft Mundwerk nicht mit Ersatzwerten, sondern öffnet
-das Einstellungsfenster mit dem Fehler und startet nach dem Speichern neu.
+verliert. Das Einstellungsfenster (Menü im Infobereich) ist ein Formular; Speichern prüft die Einstellungen, schreibt sie
+in die Datei (deren Kommentare bleiben) und setzt sie sofort in Kraft. Auslöser werden live aufgenommen: „Aufnehmen“, dann
+die Taste, Kombination oder Maustaste drücken. Das läuft über Mundwerks System-Hook, deshalb zählt auch eine Kombination,
+die die Software einer Maus sendet (etwa Strg+Shift+Alt+D auf einer Maustaste); links und rechts unterscheidet Mundwerk
+bei Strg, Shift und Alt nicht. Engine und Modell wählt die STT-Suite selbst, Mundwerk schickt nur Gerät und Sprache. Geht
+die Datei beim Start nicht, läuft Mundwerk nicht mit Ersatzwerten, sondern öffnet das Einstellungsfenster mit dem Fehler
+(dort lässt sich mit Standardwerten neu beginnen) und startet nach dem Speichern neu.
 
 Die STT-Suite braucht für Aufrufe von einem anderen Rechner ihr Token (`server.token`, siehe deren Abschnitt
 Sicherheit).

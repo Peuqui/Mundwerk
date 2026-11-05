@@ -111,6 +111,28 @@ impl Trigger {
     }
 }
 
+/// As the settings write it, the modifiers in the order Ctrl, Shift, Alt, Meta: `Trigger::parse` reads it back.
+impl std::fmt::Display for Trigger {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self.input {
+            Input::Mouse(button) => write!(formatter, "{MOUSE_PREFIX}{button}"),
+            Input::Key(key) => {
+                for (held, name) in [
+                    (self.modifiers.ctrl, "Ctrl"),
+                    (self.modifiers.shift, "Shift"),
+                    (self.modifiers.alt, "Alt"),
+                    (self.modifiers.meta, "Meta"),
+                ] {
+                    if held {
+                        write!(formatter, "{name}+")?;
+                    }
+                }
+                write!(formatter, "{key}")
+            }
+        }
+    }
+}
+
 fn is_key(name: &str) -> bool {
     let single_character = name.len() == 1 && name.chars().all(|c| c.is_ascii_uppercase() || c.is_ascii_digit());
     single_character || NAMED_KEYS.contains(&name)
@@ -137,6 +159,14 @@ mod tests {
     #[test]
     fn a_mouse_button() {
         assert_eq!(Trigger::parse("Mouse:X1").unwrap().input, Input::Mouse("X1".into()));
+    }
+
+    #[test]
+    fn written_as_read() {
+        for text in ["F9", "Ctrl+Shift+Alt+D", "Meta+Space", "Mouse:X2"] {
+            assert_eq!(Trigger::parse(text).unwrap().to_string(), text);
+        }
+        assert_eq!(Trigger::parse("Alt+Ctrl+D").unwrap().to_string(), "Ctrl+Alt+D");
     }
 
     #[test]

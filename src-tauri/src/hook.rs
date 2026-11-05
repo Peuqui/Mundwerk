@@ -20,9 +20,9 @@ mod windows_hook {
     use mundwerk_core::windows_keys::{key_event, x_button};
     use windows::Win32::Foundation::{LPARAM, LRESULT, WPARAM};
     use windows::Win32::UI::WindowsAndMessaging::{
-        CallNextHookEx, GetMessageW, SetWindowsHookExW, HC_ACTION, KBDLLHOOKSTRUCT, LLKHF_INJECTED, LLMHF_INJECTED,
-        MSG, MSLLHOOKSTRUCT, WH_KEYBOARD_LL, WH_MOUSE_LL, WM_KEYDOWN, WM_KEYUP, WM_MBUTTONDOWN, WM_MBUTTONUP,
-        WM_SYSKEYDOWN, WM_SYSKEYUP, WM_XBUTTONDOWN, WM_XBUTTONUP,
+        CallNextHookEx, GetMessageW, SetWindowsHookExW, HC_ACTION, KBDLLHOOKSTRUCT, MSG, MSLLHOOKSTRUCT,
+        WH_KEYBOARD_LL, WH_MOUSE_LL, WM_KEYDOWN, WM_KEYUP, WM_MBUTTONDOWN, WM_MBUTTONUP, WM_SYSKEYDOWN, WM_SYSKEYUP,
+        WM_XBUTTONDOWN, WM_XBUTTONUP,
     };
 
     use super::Handler;
@@ -44,6 +44,12 @@ mod windows_hook {
         Ok(())
     }
 
+    /// Typed by Mundwerk itself (enigo marks everything it sends). Not "every injected press": a mouse's own
+    /// software sends its key combinations that way too, and those must count.
+    fn is_own(extra_info: usize) -> bool {
+        extra_info == enigo::EVENT_MARKER as usize
+    }
+
     fn swallowed(event: &Event) -> bool {
         HANDLER.get().is_some_and(|handler| handler(event))
     }
@@ -52,15 +58,14 @@ mod windows_hook {
         if code == HC_ACTION.cast_signed() {
             // SAFETY: for WH_KEYBOARD_LL with HC_ACTION, lParam points to a KBDLLHOOKSTRUCT.
             let info = unsafe { &*(data.0 as *const KBDLLHOOKSTRUCT) };
-            // Typed by a program (Mundwerk's own text among them): not the user's press.
-            let injected = info.flags.0 & LLKHF_INJECTED.0 != 0;
+            let own = is_own(info.dwExtraInfo);
             #[allow(clippy::cast_possible_truncation)] // window messages fit in u32
             let press = match message.0 as u32 {
                 WM_KEYDOWN | WM_SYSKEYDOWN => Some(Press::Down),
                 WM_KEYUP | WM_SYSKEYUP => Some(Press::Up),
                 _ => None,
             };
-            if let (false, Some(press)) = (injected, press) {
+            if let (false, Some(press)) = (own, press) {
                 if swallowed(&key_event(info.vkCode, press)) {
                     return LRESULT(1);
                 }
@@ -74,7 +79,7 @@ mod windows_hook {
         if code == HC_ACTION.cast_signed() {
             // SAFETY: for WH_MOUSE_LL with HC_ACTION, lParam points to an MSLLHOOKSTRUCT.
             let info = unsafe { &*(data.0 as *const MSLLHOOKSTRUCT) };
-            let injected = info.flags & LLMHF_INJECTED != 0;
+            let own = is_own(info.dwExtraInfo);
             // The high word of mouseData says which X button.
             #[allow(clippy::cast_possible_truncation)]
             let high_word = (info.mouseData >> 16) as u16;
@@ -86,7 +91,7 @@ mod windows_hook {
                 WM_XBUTTONUP => Some(Event::Mouse(x_button(high_word), Press::Up)),
                 _ => None,
             };
-            if let (false, Some(event)) = (injected, event) {
+            if let (false, Some(event)) = (own, event) {
                 if swallowed(&event) {
                     return LRESULT(1);
                 }

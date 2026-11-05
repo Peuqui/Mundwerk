@@ -2,6 +2,7 @@
 //! when a dictation starts and ends, the replacement list, the space between dictations, the call to the STT-Suite,
 //! the history, the WAV file, the Windows key codes.
 
+pub mod capture;
 pub mod config;
 pub mod controller;
 pub mod history;

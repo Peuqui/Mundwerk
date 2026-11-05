@@ -6,20 +6,15 @@
   <link rel="stylesheet" href="settings.css" />
 </head>
 <body>
-  <header>
-    <h1>Einstellungen</h1>
-    <p class="muted">Die Datei <code id="path"></code>. Jede Einstellung ist in ihr erklärt; Speichern prüft sie und
-      setzt sie sofort in Kraft.</p>
-  </header>
-  <div id="message" role="status" hidden></div>
-  <textarea id="text" spellcheck="false" autocomplete="off"></textarea>
-  <div class="actions">
-    <button id="save" class="primary" type="button">Speichern</button>
-    <button id="reload" type="button">Verwerfen</button>
-    <button id="defaults" type="button">Standardwerte einsetzen</button>
-    <button id="microphones" type="button">Mikrofone anzeigen</button>
-  </div>
-  <ul id="microphone-list" hidden></ul>
+  <main id="form"></main>
+  <footer>
+    <div id="message" role="status" hidden></div>
+    <div class="buttons">
+      <button id="reload" type="button">Verwerfen</button>
+      <button id="save" type="button" class="primary">Speichern</button>
+    </div>
+  </footer>
+  <script src="dom.js"></script>
   <script src="settings.js"></script>
 </body>
 </html>

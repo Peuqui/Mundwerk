@@ -7,7 +7,7 @@
 
 use std::path::PathBuf;
 
-use mundwerk_core::config::{Config, DEFAULT_CONFIG};
+use mundwerk_core::config::{Config, Device, DEFAULT_CONFIG};
 use mundwerk_core::stt::SttClient;
 use mundwerk_core::Error;
 
@@ -29,7 +29,7 @@ fn client(urls: Vec<String>, token: String) -> SttClient {
     let mut config = Config::parse(DEFAULT_CONFIG).unwrap();
     config.server.urls = urls;
     config.server.token = token;
-    config.transcription.device = "cpu".into();
+    config.transcription.device = Device::Cpu;
     SttClient::new(config.server, config.transcription).unwrap()
 }
 

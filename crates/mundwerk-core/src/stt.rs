@@ -83,20 +83,11 @@ impl SttClient {
             .file_name("dictation.wav")
             .mime_str("audio/wav")
             .map_err(|error| Attempt::Failed(Error::Server(error.to_string())))?;
-        let mut form = Form::new()
+        // No engine or model: the STT-Suite uses what it has set for the device.
+        let form = Form::new()
             .part("file", file)
-            .text("device", self.transcription.device.clone())
+            .text("device", self.transcription.device.as_str())
             .text("language", self.transcription.language.clone());
-        // Empty = what the STT-Suite has set for the device: then the field is not sent at all.
-        for (name, value) in [
-            ("engine", &self.transcription.engine),
-            ("model", &self.transcription.model),
-            ("quality", &self.transcription.quality),
-        ] {
-            if !value.is_empty() {
-                form = form.text(name, value.clone());
-            }
-        }
         let mut request = self.client.post(format!("{}/transcribe", url.trim_end_matches('/'))).multipart(form);
         if !self.server.token.is_empty() {
             request = request.header(TOKEN_HEADER, &self.server.token);

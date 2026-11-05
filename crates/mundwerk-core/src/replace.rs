@@ -34,6 +34,8 @@ impl Replacer {
 fn compile(rule: &Replacement) -> Result<(Regex, String), Error> {
     let refuse = |why: &str| Error::Config(format!("replacement {:?}: {why}", rule.replacement));
     let source = match (&rule.pattern, rule.variants.is_empty()) {
+        // An empty pattern matches between every two characters.
+        (Some(pattern), true) if pattern.is_empty() => return Err(refuse("an empty pattern")),
         (Some(pattern), true) => pattern.clone(),
         (None, false) => {
             if rule.variants.iter().any(|variant| variant.trim().is_empty()) {
@@ -109,5 +111,7 @@ mod tests {
         assert!(Replacer::new(&[both]).is_err());
         assert!(Replacer::new(&[neither]).is_err());
         assert!(Replacer::new(&[variants(&[" "], "z")]).is_err());
+        let empty = Replacement { variants: vec![], pattern: Some(String::new()), replacement: "z".into() };
+        assert!(Replacer::new(&[empty]).is_err());
     }
 }

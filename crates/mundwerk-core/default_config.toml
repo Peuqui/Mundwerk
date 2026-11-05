@@ -1,5 +1,5 @@
 # Mundwerk's settings. On the first start this file is written to the user's settings folder; from then on
-# that copy is the one that counts, and the settings window changes it.
+# that copy is the one that counts. The settings window writes it, keeping these comments.
 
 [server]
 # The STT-Suite, tried in this order: the first one that answers takes the recording. A server that cannot be
@@ -10,13 +10,10 @@ token = ""
 connect_timeout_ms = 1500
 
 [transcription]
-# auto = the STT-Suite chooses GPU or CPU itself (its automatic list, GPU-Orc's traffic light).
+# auto = the STT-Suite chooses GPU or CPU itself (its automatic list, GPU-Orc's traffic light); cuda or cpu = only
+# there. Engine and model are the STT-Suite's settings for the device: Mundwerk does not choose them.
 device = "auto"
 language = "de"
-# Empty = what the STT-Suite has set for the device.
-engine = ""
-model = ""
-quality = ""
 
 # What starts a dictation: a key, a combination ("Ctrl+Alt+Space") or a mouse button ("Mouse:X1", "Mouse:X2",
 # "Mouse:Middle"). hold = record while it is held; toggle = press once to start, once more to stop.
@@ -41,8 +38,8 @@ cancel_key = "Escape"
 # Stop by itself after this much silence / after this long; 0 = never.
 stop_after_silence_s = 0
 max_duration_s = 0
-# What counts as silence for stop_after_silence_s: the loudness (RMS, 0 to 1) of a tenth of a second below this.
-silence_level = 0.01
+# What counts as silence for stop_after_silence_s: a tenth of a second quieter than this, in percent of full scale (RMS).
+silence_level_percent = 1
 
 [sounds]
 enabled = true
@@ -50,7 +47,7 @@ enabled = true
 start = "builtin:ping"
 stop = "builtin:pong"
 cancel = "builtin:break"
-volume = 0.6
+volume_percent = 60
 
 [insert]
 # type = as if typed (Unicode, umlauts included, the clipboard untouched); clipboard = paste with Ctrl+V and put
@@ -83,12 +80,12 @@ replacement = "VS Code"
 # floating = a small window that shows listening and transcribing, moved anywhere with the mouse (it remembers
 # where); tray_only = only the tray icon shows it.
 mode = "floating"
-opacity = 0.9
+opacity_percent = 90
 # How long an error stays in the overlay and the tray tooltip.
 error_shown_s = 6
 
 [history]
-# How many dictations the history keeps (tray menu: paste again, copy).
+# How many dictations the history keeps (tray menu: a click copies one).
 size = 50
 
 [system]

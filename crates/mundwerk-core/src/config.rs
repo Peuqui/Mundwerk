@@ -38,11 +38,35 @@ pub struct Server {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Transcription {
-    pub device: String,
+    pub device: Device,
     pub language: String,
-    pub engine: String,
-    pub model: String,
-    pub quality: String,
+}
+
+/// Where the STT-Suite transcribes (its `device` field).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Device {
+    Auto,
+    Cuda,
+    Cpu,
+}
+
+/// A percentage of the settings as a fraction, 0 to 1.
+#[must_use]
+pub fn fraction(percent: u8) -> f32 {
+    f32::from(percent) / 100.0
+}
+
+impl Device {
+    /// As the STT-Suite's form takes it.
+    #[must_use]
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Auto => "auto",
+            Self::Cuda => "cuda",
+            Self::Cpu => "cpu",
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -68,7 +92,7 @@ pub struct Recording {
     pub cancel_key: String,
     pub stop_after_silence_s: u64,
     pub max_duration_s: u64,
-    pub silence_level: f32,
+    pub silence_level_percent: u8,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -78,7 +102,7 @@ pub struct Sounds {
     pub start: String,
     pub stop: String,
     pub cancel: String,
-    pub volume: f32,
+    pub volume_percent: u8,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -141,7 +165,7 @@ pub enum OverlayMode {
 #[serde(deny_unknown_fields)]
 pub struct Overlay {
     pub mode: OverlayMode,
-    pub opacity: f32,
+    pub opacity_percent: u8,
     pub error_shown_s: u64,
 }
 
@@ -182,30 +206,28 @@ impl Config {
         Self::parse(&std::fs::read_to_string(path)?)
     }
 
-    /// Check `text` and write it to `path` as it stands, comments and all (the settings window saves this way).
+    /// Check the settings and write them to `path` (the settings window and the tray's overlay switch save this
+    /// way). The file keeps the explanations of `default_config.toml`: see [`Config::to_text`].
     ///
     /// # Errors
-    /// [`Config::parse`] refuses the text, or the file cannot be written.
-    pub fn save_text(text: &str, path: &Path) -> Result<Self, Error> {
-        let config = Self::parse(text)?;
-        std::fs::write(path, text)?;
-        Ok(config)
+    /// [`Config::validate`] refuses them (nothing is written then), or the file cannot be written.
+    pub fn save(&self, path: &Path) -> Result<(), Error> {
+        self.validate()?;
+        std::fs::write(path, self.to_text()?)?;
+        Ok(())
     }
 
-    /// Switch the overlay in the file at `path`, changing only that value (comments and layout stay).
+    /// The settings as a file: the values put into `default_config.toml`, so every setting keeps its comment.
     ///
     /// # Errors
-    /// The file cannot be read or written, or is no valid settings file.
-    pub fn save_overlay_mode(path: &Path, mode: OverlayMode) -> Result<Self, Error> {
-        let text = std::fs::read_to_string(path)?;
-        let mut document: toml_edit::DocumentMut =
-            text.parse().map_err(|error: toml_edit::TomlError| Error::Config(error.to_string()))?;
-        let name = match mode {
-            OverlayMode::Floating => "floating",
-            OverlayMode::TrayOnly => "tray_only",
-        };
-        document["overlay"]["mode"] = toml_edit::value(name);
-        Self::save_text(&document.to_string(), path)
+    /// Only if the settings cannot be written as TOML, which their types rule out.
+    pub fn to_text(&self) -> Result<String, Error> {
+        let error = |error: &dyn std::fmt::Display| Error::Config(error.to_string());
+        let mut template: toml_edit::DocumentMut = DEFAULT_CONFIG.parse().map_err(|e| error(&e))?;
+        let values: toml_edit::DocumentMut =
+            toml::to_string(self).map_err(|e| error(&e))?.parse().map_err(|e| error(&e))?;
+        merge(template.as_table_mut(), values.as_table());
+        Ok(template.to_string())
     }
 
     /// What the file cannot say through its types: values that would make Mundwerk fail later.
@@ -221,16 +243,46 @@ impl Config {
         }
         Trigger::parse(&self.recording.cancel_key)?;
         Replacer::new(&self.replacements)?;
-        if !(0.0..=1.0).contains(&self.recording.silence_level) {
-            return Err(Error::Config("recording.silence_level: between 0 and 1".into()));
-        }
-        if !(0.0..=1.0).contains(&self.sounds.volume) {
-            return Err(Error::Config("sounds.volume: between 0 and 1".into()));
-        }
-        if !(0.1..=1.0).contains(&self.overlay.opacity) {
-            return Err(Error::Config("overlay.opacity: between 0.1 and 1".into()));
+        for (name, value, lowest) in [
+            ("recording.silence_level_percent", self.recording.silence_level_percent, 0),
+            ("sounds.volume_percent", self.sounds.volume_percent, 0),
+            // An overlay below this could not be seen at all.
+            ("overlay.opacity_percent", self.overlay.opacity_percent, 10),
+        ] {
+            if !(lowest..=100).contains(&value) {
+                return Err(Error::Config(format!("{name}: between {lowest} and 100")));
+            }
         }
         Ok(())
+    }
+}
+
+/// Put the values of `from` into `into` and keep the comments of `into`: a value keeps its place and trailing
+/// comment, a list of tables (triggers, replacements) the comment above its first entry. What `from` lacks goes.
+fn merge(into: &mut toml_edit::Table, from: &toml_edit::Table) {
+    let gone: Vec<String> = into.iter().map(|(key, _)| key.to_owned()).filter(|key| !from.contains_key(key)).collect();
+    for key in gone {
+        into.remove(&key);
+    }
+    for (key, item) in from {
+        match (into.get_mut(key), item) {
+            (Some(toml_edit::Item::Table(target)), toml_edit::Item::Table(source)) => merge(target, source),
+            (Some(toml_edit::Item::Value(target)), toml_edit::Item::Value(source)) => {
+                let decor = target.decor().clone();
+                *target = source.clone();
+                *target.decor_mut() = decor;
+            }
+            (Some(toml_edit::Item::ArrayOfTables(target)), toml_edit::Item::ArrayOfTables(source)) => {
+                let comment = target.get(0).map(|first| first.decor().clone());
+                *target = source.clone();
+                if let (Some(comment), Some(first)) = (comment, target.get_mut(0)) {
+                    *first.decor_mut() = comment;
+                }
+            }
+            _ => {
+                into.insert(key, item.clone());
+            }
+        }
     }
 }
 
@@ -242,40 +294,52 @@ mod tests {
     fn the_defaults_are_valid() {
         let config = Config::parse(DEFAULT_CONFIG).unwrap();
         assert_eq!(config.server.urls.len(), 2);
-        assert_eq!(config.transcription.device, "auto");
+        assert_eq!(config.transcription.device, Device::Auto);
         assert_eq!(config.recording.stop_after_silence_s, 0);
         assert_eq!(config.recording.max_duration_s, 0);
     }
 
     #[test]
-    fn the_defaults_survive_a_save() {
-        let config = Config::parse(DEFAULT_CONFIG).unwrap();
-        let again = Config::parse(&toml::to_string_pretty(&config).unwrap()).unwrap();
-        assert_eq!(config, again);
+    fn the_defaults_are_written_as_the_file_is() {
+        assert_eq!(Config::parse(DEFAULT_CONFIG).unwrap().to_text().unwrap(), DEFAULT_CONFIG);
     }
 
     #[test]
-    fn saving_keeps_the_text_and_refuses_a_broken_one() {
+    fn changed_values_keep_their_comments() {
+        let mut config = Config::parse(DEFAULT_CONFIG).unwrap();
+        config.overlay.mode = OverlayMode::TrayOnly;
+        config.server.token = "abc".into();
+        assert_eq!(
+            config.to_text().unwrap(),
+            DEFAULT_CONFIG
+                .replace("mode = \"floating\"", "mode = \"tray_only\"")
+                .replace("token = \"\"", "token = \"abc\"")
+        );
+    }
+
+    #[test]
+    fn lists_of_tables_are_written_anew() {
+        let mut config = Config::parse(DEFAULT_CONFIG).unwrap();
+        config.triggers.truncate(1);
+        config.triggers[0].input = "Ctrl+Shift+Alt+D".into();
+        config.replacements.clear();
+        config.insert.per_program.push(ProgramMethod { process: "mstsc.exe".into(), method: InsertMethod::Clipboard });
+        let text = config.to_text().unwrap();
+        assert_eq!(Config::parse(&text).unwrap(), config);
+        assert!(text.contains("# What starts a dictation"), "{text}");
+    }
+
+    #[test]
+    fn saving_refuses_settings_that_cannot_work() {
         let folder = std::env::temp_dir().join(format!("mundwerk-test-{}", std::process::id()));
         std::fs::create_dir_all(&folder).unwrap();
         let path = folder.join("config.toml");
-        Config::save_text(DEFAULT_CONFIG, &path).unwrap();
+        let mut config = Config::parse(DEFAULT_CONFIG).unwrap();
+        config.save(&path).unwrap();
         assert_eq!(std::fs::read_to_string(&path).unwrap(), DEFAULT_CONFIG);
-        assert!(Config::save_text("[server]\n", &path).is_err());
+        config.server.urls.clear();
+        assert!(config.save(&path).is_err());
         assert_eq!(std::fs::read_to_string(&path).unwrap(), DEFAULT_CONFIG);
-        std::fs::remove_dir_all(&folder).unwrap();
-    }
-
-    #[test]
-    fn the_overlay_switch_changes_only_its_value() {
-        let folder = std::env::temp_dir().join(format!("mundwerk-overlay-{}", std::process::id()));
-        std::fs::create_dir_all(&folder).unwrap();
-        let path = folder.join("config.toml");
-        std::fs::write(&path, DEFAULT_CONFIG).unwrap();
-        let config = Config::save_overlay_mode(&path, OverlayMode::TrayOnly).unwrap();
-        assert_eq!(config.overlay.mode, OverlayMode::TrayOnly);
-        let written = std::fs::read_to_string(&path).unwrap();
-        assert_eq!(written, DEFAULT_CONFIG.replace("mode = \"floating\"", "mode = \"tray_only\""));
         std::fs::remove_dir_all(&folder).unwrap();
     }
 

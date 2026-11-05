@@ -2,7 +2,7 @@
 
 use std::io::Cursor;
 
-use mundwerk_core::config::Sounds;
+use mundwerk_core::config::{fraction, Sounds};
 use rodio::{Decoder, OutputStream, OutputStreamHandle, Sink};
 
 const BUILTIN_PREFIX: &str = "builtin:";
@@ -44,7 +44,7 @@ impl Player {
         let bytes = load(source)?;
         let decoder = Decoder::new(Cursor::new(bytes)).map_err(|error| format!("sound {source:?}: {error}"))?;
         let sink = Sink::try_new(&self.handle).map_err(|error| error.to_string())?;
-        sink.set_volume(sounds.volume);
+        sink.set_volume(fraction(sounds.volume_percent));
         sink.append(decoder);
         sink.detach();
         Ok(())

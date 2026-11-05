@@ -17,14 +17,17 @@ mod tray;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
+use mundwerk_core::capture::Capture;
+use mundwerk_core::controller::Event;
+
 use mundwerk_core::config::Config;
 use tauri::{
-    AppHandle, LogicalSize, Manager, PhysicalPosition, RunEvent, WebviewUrl, WebviewWindowBuilder, WindowEvent,
+    AppHandle, Emitter, LogicalSize, Manager, PhysicalPosition, RunEvent, WebviewUrl, WebviewWindowBuilder, WindowEvent,
 };
 use tauri_plugin_autostart::MacosLauncher;
 
 use crate::engine::{lock, Shared};
-use crate::settings::PositionKeeper;
+use crate::settings::{CaptureState, PositionKeeper, CAPTURED_EVENT, SETTINGS};
 use crate::status::{Reporter, Status};
 
 pub const OVERLAY: &str = "overlay";
@@ -34,10 +37,9 @@ const OVERLAY_SIZE: LogicalSize<f64> = LogicalSize::new(260.0, 56.0);
 const OVERLAY_BOTTOM_GAP: i32 = 120;
 const CONFIG_FILE: &str = "config.toml";
 
-/// Where the settings file is, and why it could not be used at the start (the settings window shows it).
+/// Where the settings file is (known before it is read, so the settings window works also when it cannot be used).
 pub struct Startup {
     pub config_path: PathBuf,
-    pub error: Mutex<Option<String>>,
 }
 
 fn main() {
@@ -46,11 +48,12 @@ fn main() {
         .plugin(tauri_plugin_single_instance::init(|app, _arguments, _folder| settings::open(app)))
         .plugin(tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, None))
         .invoke_handler(tauri::generate_handler![
-            settings::settings_text,
-            settings::default_settings_text,
+            settings::load_settings,
+            settings::default_settings,
             settings::save_settings,
             settings::microphones,
-            settings::startup_error,
+            settings::start_capture,
+            settings::stop_capture,
             overlay_opacity,
         ])
         .setup(|app| {
@@ -70,19 +73,19 @@ fn main() {
 fn setup(app: &AppHandle) -> Result<(), String> {
     let folder = app.path().app_config_dir().map_err(|error| error.to_string())?;
     let config_path = folder.join(CONFIG_FILE);
-    let loaded = Config::load_or_create(&config_path);
-    app.manage(Startup { config_path: config_path.clone(), error: Mutex::new(None) });
-    let config = match loaded {
-        Ok(config) => config,
-        Err(error) => {
-            // Nothing runs on settings that cannot work: the settings window shows why; saving restarts.
-            *lock(&app.state::<Startup>().error) = Some(error.to_string());
-            settings::open(app);
-            return Ok(());
-        }
-    };
+    app.manage(Startup { config_path: config_path.clone() });
     let reporter = Reporter::new(app.clone());
     app.manage(reporter.clone());
+    let capture: CaptureState = Arc::new(Mutex::new(Capture::default()));
+    app.manage(Arc::clone(&capture));
+    // The hook runs in any case: the settings window takes triggers through it, also while the settings cannot be
+    // used.
+    start_hook(app, capture, reporter.clone())?;
+    let Ok(config) = Config::load_or_create(&config_path) else {
+        // Nothing runs on settings that cannot work: the settings window shows why; saving restarts.
+        settings::open(app);
+        return Ok(());
+    };
     let autostart = config.system.autostart;
     let shared = engine::start(config_path.clone(), config, reporter.clone())?;
     app.manage(Arc::clone(&shared));
@@ -91,17 +94,29 @@ fn setup(app: &AppHandle) -> Result<(), String> {
     }
     create_overlay(app, &config_path).map_err(|error| error.to_string())?;
     tray::create(app).map_err(|error| error.to_string())?;
-    let hook_reporter = reporter.clone();
+    reporter.report(Status::Idle);
+    Ok(())
+}
+
+/// Every press goes to a running capture first (the settings window gets the trigger), then to the dictation.
+fn start_hook(app: &AppHandle, capture: CaptureState, reporter: Reporter) -> Result<(), String> {
+    let app = app.clone();
+    let handler = move |event: &Event| {
+        if let Some(trigger) = lock(&capture).observe(event) {
+            let _ = app.emit_to(SETTINGS, CAPTURED_EVENT, trigger);
+            return true;
+        }
+        app.try_state::<Arc<Shared>>().is_some_and(|shared| shared.press(event))
+    };
     std::thread::Builder::new()
         .name("hook".into())
         .spawn(move || {
-            if let Err(error) = hook::run(Box::new(move |event| shared.press(event))) {
-                hook_reporter.report(Status::Error(format!("keyboard and mouse hook: {error}")));
+            if let Err(error) = hook::run(Box::new(handler)) {
+                reporter.report(Status::Error(format!("keyboard and mouse hook: {error}")));
             }
         })
-        .map_err(|error| error.to_string())?;
-    reporter.report(Status::Idle);
-    Ok(())
+        .map(|_| ())
+        .map_err(|error| error.to_string())
 }
 
 /// The small window that shows listening and transcribing: no frame, always on top, never takes the focus (the
@@ -157,5 +172,5 @@ fn create_overlay(app: &AppHandle, config_path: &std::path::Path) -> tauri::Resu
 #[allow(clippy::needless_pass_by_value)]
 #[tauri::command]
 fn overlay_opacity(shared: tauri::State<'_, Arc<Shared>>) -> f32 {
-    lock(&shared.config).overlay.opacity
+    mundwerk_core::config::fraction(lock(&shared.config).overlay.opacity_percent)
 }

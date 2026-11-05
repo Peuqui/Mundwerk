@@ -1,16 +1,18 @@
-//! The settings window and what changes the settings: it edits the settings file as text (comments and all),
-//! checks it and puts it into effect; the tray's overlay switch; starting with the system; where the overlay
-//! was left (a file of its own: it is a window's place, not a setting).
+//! The settings window and what changes the settings: a form over the settings (saving checks them, writes them
+//! into the commented file and puts them into effect at once), taking a trigger live through the system hook, the
+//! tray's overlay switch, starting with the system, and where the overlay was left (a file of its own: it is a
+//! window's place, not a setting).
 
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use cpal::traits::{DeviceTrait, HostTrait};
+use mundwerk_core::capture::Capture;
 use mundwerk_core::config::{Config, OverlayMode, DEFAULT_CONFIG};
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Manager, PhysicalPosition, State, WebviewUrl, WebviewWindowBuilder};
+use tauri::{AppHandle, Manager, PhysicalPosition, State, WebviewUrl, WebviewWindowBuilder, WindowEvent};
 use tauri_plugin_autostart::ManagerExt;
 
 use crate::engine::{lock, Shared};
@@ -18,10 +20,15 @@ use crate::status::{Reporter, Status};
 use crate::{texts, Startup};
 
 pub const SETTINGS: &str = "settings";
+/// The event that brings the settings window a trigger taken live.
+pub const CAPTURED_EVENT: &str = "mundwerk://captured";
 const SETTINGS_PAGE: &str = "settings.html";
 const POSITION_FILE: &str = "overlay-position.json";
 /// The overlay is saved once it has stood still this long (moving it reports every pixel).
 const POSITION_SETTLED: Duration = Duration::from_millis(800);
+
+/// The live capture of a trigger, shared by the hook and the settings window's commands.
+pub type CaptureState = Arc<Mutex<Capture>>;
 
 pub fn open(app: &AppHandle) {
     if let Some(window) = app.get_webview_window(SETTINGS) {
@@ -31,49 +38,59 @@ pub fn open(app: &AppHandle) {
     }
     let built = WebviewWindowBuilder::new(app, SETTINGS, WebviewUrl::App(SETTINGS_PAGE.into()))
         .title(texts::SETTINGS_TITLE)
-        .inner_size(900.0, 760.0)
+        .inner_size(820.0, 860.0)
         .build();
-    if let Err(error) = built {
-        eprintln!("Mundwerk: settings window: {error}");
+    match built {
+        // A capture the window started ends with it, or the next key somewhere would be taken.
+        Ok(window) => {
+            let app = app.clone();
+            window.on_window_event(move |event| {
+                if matches!(event, WindowEvent::Destroyed) {
+                    if let Some(capture) = app.try_state::<CaptureState>() {
+                        lock(&capture).stop();
+                    }
+                }
+            });
+        }
+        Err(error) => eprintln!("Mundwerk: settings window: {error}"),
     }
 }
 
+/// What the settings window shows: the file, and the settings in it or why they cannot be used.
 #[derive(Serialize)]
-pub struct SettingsText {
+pub struct Loaded {
     path: String,
-    text: String,
+    settings: Option<Config>,
+    error: Option<String>,
 }
 
 // Tauri hands a command its arguments by value.
 #[allow(clippy::needless_pass_by_value)]
 #[tauri::command]
-pub fn settings_text(startup: State<'_, Startup>) -> Result<SettingsText, String> {
-    let text = std::fs::read_to_string(&startup.config_path).map_err(|error| error.to_string())?;
-    Ok(SettingsText { path: startup.config_path.display().to_string(), text })
+pub fn load_settings(startup: State<'_, Startup>) -> Loaded {
+    let path = startup.config_path.display().to_string();
+    let read = std::fs::read_to_string(&startup.config_path).map_err(|error| error.to_string());
+    match read.and_then(|text| Config::parse(&text).map_err(|error| error.to_string())) {
+        Ok(settings) => Loaded { path, settings: Some(settings), error: None },
+        Err(error) => Loaded { path, settings: None, error: Some(error) },
+    }
 }
 
-/// Why the settings could not be used at the start (nothing runs then), `None` when they could.
+/// The defaults, for a fresh start when the file cannot be used (the window asks first).
+#[tauri::command]
+pub fn default_settings() -> Result<Config, String> {
+    Config::parse(DEFAULT_CONFIG).map_err(|error| error.to_string())
+}
+
+/// Check the settings, write them and put them into effect; the error names what cannot work (nothing is written
+/// then). After settings that could not be used at the start, Mundwerk starts anew with these.
 // Tauri hands a command its arguments by value.
 #[allow(clippy::needless_pass_by_value)]
 #[tauri::command]
-pub fn startup_error(startup: State<'_, Startup>) -> Option<String> {
-    lock(&startup.error).clone()
-}
-
-#[tauri::command]
-pub fn default_settings_text() -> String {
-    DEFAULT_CONFIG.to_owned()
-}
-
-/// Check `text`, write it and put it into effect; the error names what cannot work (nothing is written then).
-/// After settings that could not be used at the start, Mundwerk starts anew with these.
-// Tauri hands a command its arguments by value.
-#[allow(clippy::needless_pass_by_value)]
-#[tauri::command]
-pub fn save_settings(app: AppHandle, startup: State<'_, Startup>, text: String) -> Result<(), String> {
-    let config = Config::save_text(&text, &startup.config_path).map_err(|error| error.to_string())?;
+pub fn save_settings(app: AppHandle, startup: State<'_, Startup>, settings: Config) -> Result<(), String> {
+    settings.save(&startup.config_path).map_err(|error| error.to_string())?;
     match app.try_state::<Arc<Shared>>() {
-        Some(shared) => take_effect(&app, &shared, config),
+        Some(shared) => take_effect(&app, &shared, settings),
         None => app.restart(),
     }
 }
@@ -84,15 +101,32 @@ pub fn microphones() -> Result<Vec<String>, String> {
     Ok(devices.filter_map(|device| device.name().ok()).collect())
 }
 
+/// The next key, combination or mouse button becomes a trigger ([`CAPTURED_EVENT`]); it is not passed on.
+// Tauri hands a command its arguments by value.
+#[allow(clippy::needless_pass_by_value)]
+#[tauri::command]
+pub fn start_capture(capture: State<'_, CaptureState>) {
+    lock(&capture).start();
+}
+
+// Tauri hands a command its arguments by value.
+#[allow(clippy::needless_pass_by_value)]
+#[tauri::command]
+pub fn stop_capture(capture: State<'_, CaptureState>) {
+    lock(&capture).stop();
+}
+
 pub fn toggle_overlay(app: &AppHandle) {
     let Some(shared) = app.try_state::<Arc<Shared>>() else { return };
-    let mode = match lock(&shared.config).overlay.mode {
+    let mut config = lock(&shared.config).clone();
+    config.overlay.mode = match config.overlay.mode {
         OverlayMode::Floating => OverlayMode::TrayOnly,
         OverlayMode::TrayOnly => OverlayMode::Floating,
     };
-    let result = Config::save_overlay_mode(&shared.config_path, mode)
+    let result = config
+        .save(&shared.config_path)
         .map_err(|error| error.to_string())
-        .and_then(|config| take_effect(app, &shared, config));
+        .and_then(|()| take_effect(app, &shared, config));
     if let Err(error) = result {
         if let Some(reporter) = app.try_state::<Reporter>() {
             reporter.report(Status::Error(error));

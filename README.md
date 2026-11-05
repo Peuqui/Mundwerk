@@ -39,9 +39,13 @@ Off unless set: stopping after silence, a maximum recording length, Enter at the
 Every setting with its default is in [`crates/mundwerk-core/default_config.toml`](crates/mundwerk-core/default_config.toml).
 On the first start Mundwerk writes it to the user's settings folder (on Windows `%APPDATA%\de.peuqui.mundwerk\config.toml`);
 from then on that file counts. Every field must be in it, and an unknown one is an error, so a typo does not get lost
-quietly. The settings window (tray menu) edits that file as text, comments and all; saving checks it and puts it into
-effect at once. If it cannot work at the start, Mundwerk does not run on stand-ins: it opens the settings window with
-the error and starts anew after saving.
+quietly. The settings window (tray menu) is a form; saving checks the settings, writes them into the file (its comments
+stay) and puts them into effect at once. Triggers are taken live: "Aufnehmen", then press the key, combination or mouse
+button. That goes through Mundwerk's system hook, so a combination a mouse's software sends counts too (say
+Ctrl+Shift+Alt+D on a mouse button); Mundwerk does not tell left from right Ctrl, Shift and Alt. The STT-Suite chooses
+engine and model itself; Mundwerk sends only device and language. If the file cannot work at the start, Mundwerk does not
+run on stand-ins: it opens the settings window with the error (where one can start again from the defaults) and starts
+anew after saving.
 
 The STT-Suite needs its token for calls from another machine (`server.token`, see its Security section).
 
