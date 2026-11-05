@@ -60,6 +60,9 @@ space_between_dictations = true
 press_enter = false
 # Pasting: how long the program gets to read the clipboard before what it held before is put back.
 clipboard_restore_delay_ms = 200
+# A key that writes the last dictation once more where the cursor is, for one that went nowhere (no text field had
+# the focus). Empty = off.
+again_key = ""
 
 # Programs that need the other method, by process name, e.g. a remote desktop or a terminal.
 # [[insert.per_program]]

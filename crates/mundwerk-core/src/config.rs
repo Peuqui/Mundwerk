@@ -119,6 +119,8 @@ pub struct Insert {
     pub space_between_dictations: bool,
     pub press_enter: bool,
     pub clipboard_restore_delay_ms: u64,
+    /// Empty = off.
+    pub again_key: String,
     // An empty list is written as nothing at all; the field may then be missing from the file.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub per_program: Vec<ProgramMethod>,
@@ -242,6 +244,9 @@ impl Config {
             Trigger::parse(&setting.input)?;
         }
         Trigger::parse(&self.recording.cancel_key)?;
+        if !self.insert.again_key.is_empty() {
+            Trigger::parse(&self.insert.again_key)?;
+        }
         Replacer::new(&self.replacements)?;
         for (name, value, lowest) in [
             ("recording.silence_level_percent", self.recording.silence_level_percent, 0),

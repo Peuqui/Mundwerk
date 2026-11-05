@@ -44,6 +44,8 @@ pub enum Action {
     Discard,
     /// The cancel key: the recording is thrown away.
     Cancel,
+    /// The key for the last dictation once more: write it again where the cursor is.
+    InsertAgain,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -72,6 +74,8 @@ enum State {
 pub struct Controller {
     armed: Vec<Armed>,
     cancel: Trigger,
+    /// The key for the last dictation once more, and whether its "down" was taken (its "up" then is too).
+    again: Option<(Trigger, bool)>,
     min_press: Duration,
     modifiers: Modifiers,
     state: State,
@@ -96,6 +100,10 @@ impl Controller {
         Ok(Self {
             armed,
             cancel: Trigger::parse(&config.recording.cancel_key)?,
+            again: match config.insert.again_key.as_str() {
+                "" => None,
+                key => Some((Trigger::parse(key)?, false)),
+            },
             min_press: Duration::from_millis(config.recording.min_press_ms),
             modifiers: Modifiers::default(),
             state: State::Idle,
@@ -133,6 +141,9 @@ impl Controller {
             self.state = State::Idle;
             return Outcome { action: Action::Cancel, swallow: true };
         }
+        if let Some(outcome) = self.again(input, press) {
+            return outcome;
+        }
         let Some(index) = self.armed_for(input, press) else { return PASS };
         let swallow = !self.armed[index].pass_through;
         let action = match press {
@@ -147,6 +158,25 @@ impl Controller {
             }
         };
         Outcome { action, swallow }
+    }
+
+    /// The key for the last dictation once more: its "down" (not while recording) and the "up" that belongs to it.
+    fn again(&mut self, input: &Input, press: Press) -> Option<Outcome> {
+        let recording = self.is_recording();
+        let modifiers = self.modifiers;
+        let (trigger, held) = self.again.as_mut()?;
+        match press {
+            Press::Down if !recording && trigger.input == *input && trigger.modifiers == modifiers => {
+                let first = !*held;
+                *held = true;
+                Some(Outcome { action: if first { Action::InsertAgain } else { Action::Nothing }, swallow: true })
+            }
+            Press::Up if *held && trigger.input == *input => {
+                *held = false;
+                Some(Outcome { action: Action::Nothing, swallow: true })
+            }
+            _ => None,
+        }
     }
 
     /// The trigger this press belongs to: a "down" by its key and modifiers, an "up" to the trigger that took
@@ -342,6 +372,39 @@ mod tests {
         let mut controller = controller();
         assert_eq!(controller.handle(&key("A", Press::Down), Instant::now()), PASS);
         assert_eq!(controller.handle(&mouse("Left", Press::Down), Instant::now()), PASS);
+    }
+
+    fn with_again_key(key: &str) -> Controller {
+        let mut config = Config::parse(DEFAULT_CONFIG).unwrap();
+        config.insert.again_key = key.into();
+        Controller::new(&config).unwrap()
+    }
+
+    #[test]
+    fn the_again_key_writes_the_last_dictation_once_per_press() {
+        let mut controller = with_again_key("Ctrl+Shift+V");
+        let now = Instant::now();
+        controller.handle(&Event::Modifier(Modifier::Ctrl, Press::Down), now);
+        controller.handle(&Event::Modifier(Modifier::Shift, Press::Down), now);
+        assert_eq!(
+            controller.handle(&key("V", Press::Down), now),
+            Outcome { action: Action::InsertAgain, swallow: true }
+        );
+        assert_eq!(controller.handle(&key("V", Press::Down), now).action, Action::Nothing, "auto-repeat");
+        controller.handle(&Event::Modifier(Modifier::Ctrl, Press::Up), now);
+        assert_eq!(controller.handle(&key("V", Press::Up), now), Outcome { action: Action::Nothing, swallow: true });
+        assert_eq!(controller.handle(&key("V", Press::Up), now), PASS, "a plain V is the program's again");
+    }
+
+    #[test]
+    fn the_again_key_does_nothing_while_recording_and_needs_its_modifiers() {
+        let mut controller = with_again_key("Ctrl+Shift+V");
+        let now = Instant::now();
+        assert_eq!(controller.handle(&key("V", Press::Down), now), PASS);
+        controller.handle(&key("F9", Press::Down), now);
+        controller.handle(&Event::Modifier(Modifier::Ctrl, Press::Down), now);
+        controller.handle(&Event::Modifier(Modifier::Shift, Press::Down), now);
+        assert_eq!(controller.handle(&key("V", Press::Down), now), PASS);
     }
 
     #[test]

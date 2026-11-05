@@ -1,7 +1,9 @@
 //! The run of a dictation. The hook thread asks the controller what a press means; the recorder thread opens and
 //! closes the microphone, plays the sounds and watches silence and length; the transcriber thread sends one
 //! recording after the other to the STT-Suite, corrects the text with the replacement list and writes it into the
-//! field in front. So a new dictation can start while the last one is still being transcribed, in order.
+//! field in front. So a new dictation can start while the last one is still being transcribed, in order. A recording
+//! the STT-Suite did not transcribe is kept (the tray sends it again); the key for the last dictation once more
+//! writes the newest of the history again.
 
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -20,6 +22,7 @@ use crate::audio::{self, Recording};
 use crate::insert::Inserter;
 use crate::sound::{Cue, Player};
 use crate::status::{Reporter, Status};
+use crate::texts;
 
 /// How often the recorder looks at silence and length while it records.
 const TICK: Duration = Duration::from_millis(100);
@@ -31,7 +34,10 @@ pub struct Shared {
     pub history: Mutex<History>,
     /// Recordings sent to the STT-Suite and not yet back.
     pending: AtomicUsize,
+    /// The last recording the STT-Suite did not transcribe, to send again.
+    failed: Mutex<Option<Audio>>,
     recorder: Sender<Action>,
+    jobs: Sender<Job>,
 }
 
 /// A lock that a panicked thread left behind still holds valid data here (whole values are swapped in).
@@ -62,6 +68,27 @@ impl Shared {
         }
     }
 
+    /// Whether there is a recording to send again (the tray offers it then).
+    pub fn has_failed(&self) -> bool {
+        lock(&self.failed).is_some()
+    }
+
+    /// Send the recording the STT-Suite did not transcribe once more; `false` when there is none.
+    pub fn resend(&self) -> bool {
+        let Some(audio) = lock(&self.failed).take() else { return false };
+        log::info!("sending the last recording again");
+        self.queue(Job::Transcribe(audio));
+        true
+    }
+
+    fn queue(&self, job: Job) {
+        if matches!(job, Job::Transcribe(_)) {
+            self.pending.fetch_add(1, Ordering::SeqCst);
+        }
+        // The transcriber runs as long as the app: a send cannot fail.
+        let _ = self.jobs.send(job);
+    }
+
     /// New settings (the settings window saved them): triggers, history size and everything else from now on.
     pub fn apply(&self, config: Config) -> Result<(), String> {
         *lock(&self.controller) = Controller::new(&config).map_err(|error| error.to_string())?;
@@ -74,20 +101,22 @@ impl Shared {
 /// Start the recorder and transcriber threads.
 pub fn start(config_path: PathBuf, config: Config, reporter: Reporter) -> Result<Arc<Shared>, String> {
     let (recorder, actions) = mpsc::channel();
+    let (jobs, queue) = mpsc::channel();
     let shared = Arc::new(Shared {
         config_path,
         controller: Mutex::new(Controller::new(&config).map_err(|error| error.to_string())?),
         history: Mutex::new(History::new(config.history.size)),
         config: Mutex::new(config),
         pending: AtomicUsize::new(0),
+        failed: Mutex::new(None),
         recorder,
+        jobs,
     });
-    let (jobs, queue) = mpsc::channel();
     let for_recorder = Arc::clone(&shared);
     let recorder_reporter = reporter.clone();
     std::thread::Builder::new()
         .name("recorder".into())
-        .spawn(move || record(&for_recorder, &actions, &jobs, &recorder_reporter))
+        .spawn(move || record(&for_recorder, &actions, &recorder_reporter))
         .map_err(|error| error.to_string())?;
     let for_transcriber = Arc::clone(&shared);
     std::thread::Builder::new()
@@ -97,13 +126,20 @@ pub fn start(config_path: PathBuf, config: Config, reporter: Reporter) -> Result
     Ok(shared)
 }
 
-/// A recording on its way to the STT-Suite.
-struct Job {
+/// A recording as it came from the microphone.
+struct Audio {
     samples: Vec<f32>,
     sample_rate: u32,
 }
 
-fn record(shared: &Shared, actions: &Receiver<Action>, jobs: &Sender<Job>, reporter: &Reporter) {
+/// What the transcriber does, one after the other.
+enum Job {
+    Transcribe(Audio),
+    /// Write the newest dictation of the history again where the cursor is.
+    InsertAgain,
+}
+
+fn record(shared: &Shared, actions: &Receiver<Action>, reporter: &Reporter) {
     // The audio output is opened on this thread and lives with it (it cannot move between threads).
     let player = match Player::new() {
         Ok(player) => Some(player),
@@ -153,12 +189,11 @@ fn record(shared: &Shared, actions: &Receiver<Action>, jobs: &Sender<Job>, repor
                 if let Some(recording) = current.take() {
                     let (samples, sample_rate) = recording.finish();
                     play(Cue::Stop);
-                    shared.pending.fetch_add(1, Ordering::SeqCst);
+                    shared.queue(Job::Transcribe(Audio { samples, sample_rate }));
                     reporter.report(Status::Transcribing);
-                    // The transcriber runs as long as the app: a send cannot fail.
-                    let _ = jobs.send(Job { samples, sample_rate });
                 }
             }
+            Action::InsertAgain => shared.queue(Job::InsertAgain),
             Action::Discard => {
                 current.take();
                 reporter.report(shared.status());
@@ -188,8 +223,14 @@ fn transcribe(shared: &Shared, queue: &Receiver<Job>, reporter: &Reporter) {
         }
     };
     for job in queue {
-        let result = one(shared, &job, inserter.as_mut());
-        shared.pending.fetch_sub(1, Ordering::SeqCst);
+        let result = match job {
+            Job::Transcribe(audio) => {
+                let result = one(shared, audio, inserter.as_mut());
+                shared.pending.fetch_sub(1, Ordering::SeqCst);
+                result
+            }
+            Job::InsertAgain => again(shared, inserter.as_mut()),
+        };
         match result {
             Ok(()) => reporter.report(shared.status()),
             Err(error) => reporter.report(Status::Error(error)),
@@ -197,13 +238,17 @@ fn transcribe(shared: &Shared, queue: &Receiver<Job>, reporter: &Reporter) {
     }
 }
 
-/// One recording: to the STT-Suite, through the replacement list, into the field, into the history.
-fn one(shared: &Shared, job: &Job, inserter: Option<&mut Inserter>) -> Result<(), String> {
+/// One recording: to the STT-Suite, through the replacement list, into the history, into the field. One the
+/// STT-Suite did not transcribe is kept to send again; a text that could not be written is in the history.
+fn one(shared: &Shared, audio: Audio, inserter: Option<&mut Inserter>) -> Result<(), String> {
     let config = lock(&shared.config).clone();
-    let wav = wav::encode(&job.samples, job.sample_rate).map_err(|error| error.to_string())?;
-    let client =
-        SttClient::new(config.server.clone(), config.transcription.clone()).map_err(|error| error.to_string())?;
-    let transcript = client.transcribe(&wav).map_err(|error| error.to_string())?;
+    let transcript = match transcribe_audio(&config, &audio) {
+        Ok(transcript) => transcript,
+        Err(error) => {
+            *lock(&shared.failed) = Some(audio);
+            return Err(format!("{error} – {}", texts::RESEND_HINT));
+        }
+    };
     log::info!(
         "transcribed by {} ({}, {}): {} characters",
         transcript.server,
@@ -217,4 +262,20 @@ fn one(shared: &Shared, job: &Job, inserter: Option<&mut Inserter>) -> Result<()
     }
     lock(&shared.history).add(Entry { when: chrono::Local::now().format("%H:%M").to_string(), text: text.clone() });
     inserter.ok_or("typing is not available")?.insert(&config.insert, &text)
+}
+
+fn transcribe_audio(config: &Config, audio: &Audio) -> Result<mundwerk_core::stt::Transcript, String> {
+    let wav = wav::encode(&audio.samples, audio.sample_rate).map_err(|error| error.to_string())?;
+    let client =
+        SttClient::new(config.server.clone(), config.transcription.clone()).map_err(|error| error.to_string())?;
+    client.transcribe(&wav).map_err(|error| error.to_string())
+}
+
+/// The newest dictation of the history once more, where the cursor is now.
+fn again(shared: &Shared, inserter: Option<&mut Inserter>) -> Result<(), String> {
+    let text =
+        lock(&shared.history).entries().next().map(|entry| entry.text.clone()).ok_or(texts::NOTHING_TO_REPEAT)?;
+    log::info!("writing the last dictation again: {} characters", text.len());
+    let settings = lock(&shared.config).insert.clone();
+    inserter.ok_or("typing is not available")?.insert(&settings, &text)
 }

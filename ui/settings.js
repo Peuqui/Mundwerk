@@ -129,6 +129,15 @@ function triggerField(object, key) {
   return h('span', { class: 'trigger' }, caps, button, warning)
 }
 
+// A trigger that may be off: the field and a button that switches it off.
+function optionalTrigger(object, key) {
+  const box = h('span', { class: 'inline' })
+  const render = () => box.replaceChildren(triggerField(object, key),
+    h('button', { type: 'button', class: 'small', disabled: !object[key], onclick: () => { object[key] = ''; render() } }, 'Aus'))
+  render()
+  return box
+}
+
 async function disarm() {
   if (!capturing) return
   const running = capturing
@@ -273,6 +282,8 @@ function insert() {
       field('Methode', choice(config.insert, 'method', methods)),
       field('Zwischen zwei Diktaten', check(config.insert, 'space_between_dictations', 'ein Leerzeichen, wenn es ins selbe Fenster geht')),
       field('Am Ende', check(config.insert, 'press_enter', 'Enter drücken (sofort absenden)')),
+      field('Letztes Diktat noch einmal', optionalTrigger(config.insert, 'again_key'),
+        'Schreibt das letzte Diktat erneut dorthin, wo der Cursor steht – für eines, das ins Leere ging, weil kein Textfeld aktiv war. Erst ins Feld klicken, dann die Taste.'),
       field('Zwischenablage zurück nach', h('span', { class: 'inline' }, number(config.insert, 'clipboard_restore_delay_ms'), 'ms'))),
     h('h3', { class: 'muted subheading' }, 'Programme mit eigener Methode'),
     ...rows(config.insert.per_program, (rule) => [

@@ -19,6 +19,7 @@ const SETTINGS_ITEM: &str = "settings";
 const OVERLAY_ITEM: &str = "overlay";
 const QUIT_ITEM: &str = "quit";
 const LOG_ITEM: &str = "log";
+const RESEND_ITEM: &str = "resend";
 const HISTORY_PREFIX: &str = "history:";
 
 const ICON_IDLE: &[u8] = include_bytes!("../icons/tray-idle.png");
@@ -69,17 +70,22 @@ fn menu(app: &AppHandle) -> tauri::Result<Menu<Wry>> {
     for (index, entry) in entries.iter().enumerate() {
         history.append(&MenuItem::with_id(app, format!("{HISTORY_PREFIX}{index}"), entry, true, None::<&str>)?)?;
     }
-    Menu::with_items(
+    let menu = Menu::with_items(
         app,
         &[
             &MenuItem::with_id(app, SETTINGS_ITEM, texts::SETTINGS, true, None::<&str>)?,
             &CheckMenuItem::with_id(app, OVERLAY_ITEM, texts::OVERLAY_SHOWN, true, floating, None::<&str>)?,
             &history,
-            &PredefinedMenuItem::separator(app)?,
-            &MenuItem::with_id(app, LOG_ITEM, texts::OPEN_LOG, true, None::<&str>)?,
-            &MenuItem::with_id(app, QUIT_ITEM, texts::QUIT, true, None::<&str>)?,
         ],
-    )
+    )?;
+    // Only while a recording the STT-Suite did not transcribe waits.
+    if shared.as_ref().is_some_and(|shared| shared.has_failed()) {
+        menu.append(&MenuItem::with_id(app, RESEND_ITEM, texts::RESEND, true, None::<&str>)?)?;
+    }
+    menu.append(&PredefinedMenuItem::separator(app)?)?;
+    menu.append(&MenuItem::with_id(app, LOG_ITEM, texts::OPEN_LOG, true, None::<&str>)?)?;
+    menu.append(&MenuItem::with_id(app, QUIT_ITEM, texts::QUIT, true, None::<&str>)?)?;
+    Ok(menu)
 }
 
 fn label(when: &str, text: &str) -> String {
@@ -96,10 +102,20 @@ fn clicked(app: &AppHandle, id: &str) {
         OVERLAY_ITEM => settings::toggle_overlay(app),
         QUIT_ITEM => app.exit(0),
         LOG_ITEM => open_log(app),
+        RESEND_ITEM => resend(app),
         _ => {
             if let Some(index) = id.strip_prefix(HISTORY_PREFIX).and_then(|index| index.parse::<usize>().ok()) {
                 copy_entry(app, index);
             }
+        }
+    }
+}
+
+fn resend(app: &AppHandle) {
+    let Some(shared) = app.try_state::<Arc<Shared>>() else { return };
+    if shared.resend() {
+        if let Some(reporter) = app.try_state::<crate::status::Reporter>() {
+            reporter.report(shared.status());
         }
     }
 }
