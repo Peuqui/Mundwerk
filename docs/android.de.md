@@ -2,8 +2,8 @@
 
 Stand: Diskussion, nicht begonnen (5. November 2026).
 
-Ziel: auf dem Handy in jede App diktieren, mit der eigenen STT-Suite statt der Spracheingabe von Gboard, mit
-Ersetzungsliste und Verlauf wie unter Windows.
+Ziel: auf dem Handy in jede App diktieren, mit der eigenen STT-Suite statt der Spracheingabe von Gboard (die versteht
+manches „ziemlich banane“, Peuqui), mit Ersetzungsliste und Verlauf wie unter Windows.
 
 ## Warum nicht einfach die Windows-App
 
@@ -36,9 +36,23 @@ Bedienungshilfe-Dienst ins aktive Feld. Kommt dem Windows-Mundwerk am nächsten.
   Zwischenablage (`ACTION_PASTE`).
 - In Android Auto sind solche Overlays stark eingeschränkt; wie es dort gehen kann, wäre zu klären.
 
+**Die Tastatur, die beim Antippen eines Felds hochkommt** (Peuqui: nervig), kann genau dieser Dienst unten halten: Eine
+Bedienungshilfe darf die Bildschirmtastatur ausblenden (`AccessibilityService.getSoftKeyboardController()` mit
+`SHOW_MODE_HIDDEN`, seit Android 7). Solange der Diktat-Modus an ist, bleibt sie weg: ins Feld tippen, die Schreibmarke
+steht, keine Tastatur, die Blase diktiert hinein. Ein langer Druck auf die Blase holt die Tastatur zurück, wenn doch
+getippt werden soll.
+
+**An der Schreibmarke einfügen:** `ACTION_SET_TEXT` ersetzt das ganze Feld. Mundwerk liest deshalb den Text des Felds
+und die Stelle der Schreibmarke (`textSelectionStart`/`End`), setzt das Diktat dort ein (mit Leerzeichen davor, wenn
+nötig) und stellt die Marke dahinter (`ACTION_SET_SELECTION`). Bei gewöhnlichen Eingabefeldern geht das; Apps mit
+eigenen Eingabefeldern (Web-Oberflächen, manche Chat-Apps) können sich anders verhalten, dann über die Zwischenablage.
+
 ## Empfehlung
 
-Weg 1 als Grundlage (sauber, offiziell, jede App). Die Blase später, falls sie wirklich gebraucht wird.
+Peuqui findet die Blase am interessantesten, und mit der ausgeblendeten Tastatur passt sie am besten zu dem, was
+Mundwerk unter Windows ist: tippen, diktieren, fertig, ohne Tastatur dazwischen. Also Weg 2, für eine App nur für sich
+selbst (nicht über Google Play). Weg 1 bleibt die Rückfallebene, falls eine wichtige App das Einfügen per Bedienungshilfe
+nicht mitmacht.
 
 ## Netz
 
@@ -49,8 +63,9 @@ Weg 1 als Grundlage (sauber, offiziell, jede App). Die Blase später, falls sie 
 
 ## Offene Fragen
 
-- Welche Tastatur auf dem Handy: bei Gboard bleiben (Wechsel per Tastatursymbol) oder HeliBoard (Mikrofon-Knopf
-  startet Mundwerk)?
+- Welche Apps vor allem (Messenger, Browser, Notizen)? An ihnen zuerst prüfen, ob das Einfügen an der Schreibmarke
+  geht oder die Zwischenablage nötig ist.
+- Blase immer da oder nur im Diktat-Modus, und wie wird der Modus an- und ausgeschaltet?
 - Reicht zu Hause, oder soll es von Anfang an unterwegs gehen (dann zuerst der Proxy)?
 - Android Auto: gewünscht? Dann Weg 2 und seine Grenzen dort genauer ansehen.
 - Bauen auf dem Mini: Android-SDK und Build-Tools wären neu zu installieren.
