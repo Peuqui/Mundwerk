@@ -52,7 +52,7 @@ pub fn open(app: &AppHandle) {
                 }
             });
         }
-        Err(error) => eprintln!("Mundwerk: settings window: {error}"),
+        Err(error) => log::error!("settings window: {error}"),
     }
 }
 
@@ -88,7 +88,11 @@ pub fn default_settings() -> Result<Config, String> {
 #[allow(clippy::needless_pass_by_value)]
 #[tauri::command]
 pub fn save_settings(app: AppHandle, startup: State<'_, Startup>, settings: Config) -> Result<(), String> {
-    settings.save(&startup.config_path).map_err(|error| error.to_string())?;
+    settings.save(&startup.config_path).map_err(|error| {
+        log::error!("settings not saved: {error}");
+        error.to_string()
+    })?;
+    log::info!("settings saved to {}", startup.config_path.display());
     match app.try_state::<Arc<Shared>>() {
         Some(shared) => take_effect(&app, &shared, settings),
         None => app.restart(),
@@ -106,6 +110,7 @@ pub fn microphones() -> Result<Vec<String>, String> {
 #[allow(clippy::needless_pass_by_value)]
 #[tauri::command]
 pub fn start_capture(capture: State<'_, CaptureState>) {
+    log::info!("capture: started");
     lock(&capture).start();
 }
 
@@ -113,7 +118,16 @@ pub fn start_capture(capture: State<'_, CaptureState>) {
 #[allow(clippy::needless_pass_by_value)]
 #[tauri::command]
 pub fn stop_capture(capture: State<'_, CaptureState>) {
+    log::info!("capture: stopped");
     lock(&capture).stop();
+}
+
+/// What the settings page reports for the log: its errors and the steps of a capture.
+// Tauri hands a command its arguments by value.
+#[allow(clippy::needless_pass_by_value)]
+#[tauri::command]
+pub fn page_log(message: String) {
+    log::info!("settings page: {message}");
 }
 
 pub fn toggle_overlay(app: &AppHandle) {
@@ -196,7 +210,7 @@ impl PositionKeeper {
             }
             let text = serde_json::to_string(&Position { x: position.x, y: position.y }).unwrap_or_default();
             if let Err(error) = std::fs::write(&keeper.path, text) {
-                eprintln!("Mundwerk: overlay position: {error}");
+                log::error!("overlay position: {error}");
             }
         });
     }

@@ -8,6 +8,7 @@ use tauri::image::Image;
 use tauri::menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem, Submenu};
 use tauri::tray::TrayIconBuilder;
 use tauri::{AppHandle, Manager, Wry};
+use tauri_plugin_opener::OpenerExt;
 
 use crate::engine::{lock, Shared};
 use crate::status::Status;
@@ -17,6 +18,7 @@ const TRAY: &str = "mundwerk";
 const SETTINGS_ITEM: &str = "settings";
 const OVERLAY_ITEM: &str = "overlay";
 const QUIT_ITEM: &str = "quit";
+const LOG_ITEM: &str = "log";
 const HISTORY_PREFIX: &str = "history:";
 
 const ICON_IDLE: &[u8] = include_bytes!("../icons/tray-idle.png");
@@ -74,6 +76,7 @@ fn menu(app: &AppHandle) -> tauri::Result<Menu<Wry>> {
             &CheckMenuItem::with_id(app, OVERLAY_ITEM, texts::OVERLAY_SHOWN, true, floating, None::<&str>)?,
             &history,
             &PredefinedMenuItem::separator(app)?,
+            &MenuItem::with_id(app, LOG_ITEM, texts::OPEN_LOG, true, None::<&str>)?,
             &MenuItem::with_id(app, QUIT_ITEM, texts::QUIT, true, None::<&str>)?,
         ],
     )
@@ -92,6 +95,7 @@ fn clicked(app: &AppHandle, id: &str) {
         SETTINGS_ITEM => settings::open(app),
         OVERLAY_ITEM => settings::toggle_overlay(app),
         QUIT_ITEM => app.exit(0),
+        LOG_ITEM => open_log(app),
         _ => {
             if let Some(index) = id.strip_prefix(HISTORY_PREFIX).and_then(|index| index.parse::<usize>().ok()) {
                 copy_entry(app, index);
@@ -100,12 +104,22 @@ fn clicked(app: &AppHandle, id: &str) {
     }
 }
 
+fn open_log(app: &AppHandle) {
+    let opened = app.path().app_log_dir().map_err(|error| error.to_string()).and_then(|folder| {
+        let file = folder.join(format!("{}.log", crate::LOG_NAME));
+        app.opener().open_path(file.display().to_string(), None::<&str>).map_err(|error| error.to_string())
+    });
+    if let Err(error) = opened {
+        log::error!("open the log: {error}");
+    }
+}
+
 fn copy_entry(app: &AppHandle, index: usize) {
     let Some(shared) = app.try_state::<Arc<Shared>>() else { return };
     let text = lock(&shared.history).entries().nth(index).map(|entry| entry.text.clone());
     if let Some(text) = text {
         if let Err(error) = insert::copy(&text) {
-            eprintln!("Mundwerk: copy: {error}");
+            log::error!("copy: {error}");
         }
     }
 }

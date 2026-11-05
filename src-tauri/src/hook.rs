@@ -38,6 +38,7 @@ mod windows_hook {
         unsafe {
             SetWindowsHookExW(WH_KEYBOARD_LL, Some(keyboard), None, 0).map_err(|error| error.to_string())?;
             SetWindowsHookExW(WH_MOUSE_LL, Some(mouse), None, 0).map_err(|error| error.to_string())?;
+            log::info!("keyboard and mouse hook installed");
             let mut message = MSG::default();
             while GetMessageW(&raw mut message, None, 0, 0).as_bool() {}
         }

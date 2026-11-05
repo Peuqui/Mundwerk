@@ -11,9 +11,14 @@ tauri-build = { version = "2", features = [] }
 
 [dependencies]
 mundwerk-core = { path = "../crates/mundwerk-core" }
-tauri = { version = "2", features = ["tray-icon", "image-png"] }
+# devtools: the settings window can be inspected (right click) also in a release build, to see what its page does.
+tauri = { version = "2", features = ["tray-icon", "image-png", "devtools"] }
 tauri-plugin-autostart = "2"
 tauri-plugin-single-instance = "2"
+# The log file (what the hook, a capture and the dictation did) and opening it from the tray.
+tauri-plugin-log = "2"
+tauri-plugin-opener = "2"
+log = "0.4"
 cpal = "0.15"
 enigo = "0.3"
 arboard = "3"

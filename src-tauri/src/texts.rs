@@ -8,6 +8,7 @@ pub const OVERLAY_SHOWN: &str = "Overlay zeigen";
 pub const HISTORY: &str = "Verlauf (anklicken = kopieren)";
 pub const HISTORY_EMPTY: &str = "noch nichts diktiert";
 pub const QUIT: &str = "Beenden";
+pub const OPEN_LOG: &str = "Protokoll öffnen";
 pub const SETTINGS_TITLE: &str = "Mundwerk – Einstellungen";
 
 /// How long a history entry may be in the menu before it is cut.

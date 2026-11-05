@@ -25,6 +25,7 @@ use tauri::{
     AppHandle, Emitter, LogicalSize, Manager, PhysicalPosition, RunEvent, WebviewUrl, WebviewWindowBuilder, WindowEvent,
 };
 use tauri_plugin_autostart::MacosLauncher;
+use tauri_plugin_log::{RotationStrategy, Target, TargetKind, TimezoneStrategy};
 
 use crate::engine::{lock, Shared};
 use crate::settings::{CaptureState, PositionKeeper, CAPTURE_EVENT};
@@ -36,6 +37,10 @@ const OVERLAY_SIZE: LogicalSize<f64> = LogicalSize::new(260.0, 56.0);
 /// The overlay's default place: this far above the bottom of the main screen (physical pixels).
 const OVERLAY_BOTTOM_GAP: i32 = 120;
 const CONFIG_FILE: &str = "config.toml";
+/// The log file in the system's log folder of the app (`mundwerk.log`); the tray opens it.
+pub const LOG_NAME: &str = "mundwerk";
+/// A log larger than this starts anew (the old one is kept once).
+const LOG_MAX_BYTES: u128 = 2_000_000;
 
 /// Where the settings file is (known before it is read, so the settings window works also when it cannot be used).
 pub struct Startup {
@@ -47,6 +52,17 @@ fn main() {
         // A second start opens the settings of the first instead.
         .plugin(tauri_plugin_single_instance::init(|app, _arguments, _folder| settings::open(app)))
         .plugin(tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, None))
+        .plugin(
+            tauri_plugin_log::Builder::new()
+                .clear_targets()
+                .target(Target::new(TargetKind::LogDir { file_name: Some(LOG_NAME.into()) }))
+                .level(log::LevelFilter::Info)
+                .timezone_strategy(TimezoneStrategy::UseLocal)
+                .max_file_size(LOG_MAX_BYTES)
+                .rotation_strategy(RotationStrategy::KeepOne)
+                .build(),
+        )
+        .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             settings::load_settings,
             settings::default_settings,
@@ -54,6 +70,7 @@ fn main() {
             settings::microphones,
             settings::start_capture,
             settings::stop_capture,
+            settings::page_log,
             overlay_opacity,
         ])
         .setup(|app| {
@@ -105,8 +122,11 @@ fn start_hook(app: &AppHandle, capture: CaptureState, reporter: Reporter) -> Res
     let handler = move |event: &Event| {
         let update = lock(&capture).observe(event);
         if let Some(update) = update {
+            log::info!("capture: {update:?}");
             let done = matches!(update, Update::Done(_));
-            let _ = app.emit(CAPTURE_EVENT, update);
+            if let Err(error) = app.emit(CAPTURE_EVENT, update) {
+                log::error!("capture: sending to the settings window: {error}");
+            }
             if done {
                 return true;
             }
@@ -143,7 +163,7 @@ fn create_overlay(app: &AppHandle, config_path: &std::path::Path) -> tauri::Resu
     let position = match settings::overlay_position(config_path) {
         Ok(position) => position,
         Err(error) => {
-            eprintln!("Mundwerk: {error}");
+            log::warn!("overlay position (the default place is used): {error}");
             None
         }
     };

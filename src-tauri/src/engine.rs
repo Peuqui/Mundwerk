@@ -44,6 +44,7 @@ impl Shared {
     pub fn press(&self, event: &Event) -> bool {
         let outcome = lock(&self.controller).handle(event, Instant::now());
         if outcome.action != Action::Nothing {
+            log::info!("trigger {event:?}: {:?}", outcome.action);
             // The recorder runs as long as the app: a send cannot fail.
             let _ = self.recorder.send(outcome.action);
         }
@@ -203,6 +204,13 @@ fn one(shared: &Shared, job: &Job, inserter: Option<&mut Inserter>) -> Result<()
     let client =
         SttClient::new(config.server.clone(), config.transcription.clone()).map_err(|error| error.to_string())?;
     let transcript = client.transcribe(&wav).map_err(|error| error.to_string())?;
+    log::info!(
+        "transcribed by {} ({}, {}): {} characters",
+        transcript.server,
+        transcript.device,
+        transcript.engine,
+        transcript.text.len()
+    );
     let text = Replacer::new(&config.replacements).map_err(|error| error.to_string())?.apply(transcript.text.trim());
     if text.is_empty() {
         return Ok(());

@@ -92,7 +92,7 @@ where
                 }
             },
             // A broken stream ends with what it has; the error shows in the log.
-            |error| eprintln!("microphone: {error}"),
+            |error| log::error!("microphone: {error}"),
             None,
         )
         .map_err(|error| error.to_string())

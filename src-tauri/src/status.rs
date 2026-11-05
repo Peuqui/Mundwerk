@@ -38,8 +38,9 @@ impl Reporter {
 
     pub fn report(&self, status: Status) {
         let generation = self.generation.fetch_add(1, Ordering::SeqCst) + 1;
+        log::info!("status: {status:?}");
         if let Status::Error(message) = &status {
-            eprintln!("Mundwerk: {message}");
+            log::error!("{message}");
             let shown =
                 self.app.try_state::<Arc<Shared>>().map_or(0, |shared| lock(&shared.config).overlay.error_shown_s);
             let reporter = self.clone();
@@ -62,9 +63,13 @@ fn show(app: &AppHandle, status: &Status) {
     let floating =
         app.try_state::<Arc<Shared>>().is_some_and(|shared| lock(&shared.config).overlay.mode == OverlayMode::Floating);
     if let Some(overlay) = app.get_webview_window(OVERLAY) {
-        let _ = overlay.emit(STATUS_EVENT, status);
+        if let Err(error) = overlay.emit(STATUS_EVENT, status) {
+            log::error!("overlay: {error}");
+        }
         let visible = floating && *status != Status::Idle;
-        let _ = if visible { overlay.show() } else { overlay.hide() };
+        if let Err(error) = if visible { overlay.show() } else { overlay.hide() } {
+            log::error!("overlay show/hide: {error}");
+        }
     }
     tray::show_status(app, status, &texts::status(status));
 }

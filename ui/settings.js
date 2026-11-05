@@ -38,6 +38,20 @@ function say(words, kind) {
   message.hidden = false
 }
 
+// Into Mundwerk's log (tray: "Protokoll öffnen"), to see on another machine what this page did.
+function note(text) {
+  // A log line that cannot be sent must not raise an error of its own (it would report itself again).
+  invoke('page_log', { message: text }).catch(() => {})
+}
+
+// Any error of this page shows at the bottom and goes into the log.
+function report(text) {
+  say(`Fehler in der Seite: ${text}`, 'error')
+  note(`error: ${text}`)
+}
+window.addEventListener('error', (event) => report(`${event.message} (${event.filename}:${event.lineno})`))
+window.addEventListener('unhandledrejection', (event) => report(String(event.reason)))
+
 // ── Fields ────────────────────────────────────────────────────────────────────────────────────────────────────
 
 function text(object, key, attributes = {}) {
@@ -81,6 +95,7 @@ function triggerField(object, key) {
   const note = h('span', { class: 'note' })
   const button = h('button', { type: 'button', class: 'small', onclick: () => arm() }, 'Aufnehmen')
   async function arm() {
+    note(`capture: armed for ${key} (was ${object[key] || 'none'})`)
     if (capturing) await disarm()
     capturing = { update, cancel: () => { caps.replaceChildren(...keyCaps(object[key])); done() } }
     caps.replaceChildren(h('kbd', { class: 'waiting' }, 'Taste drücken …'))
@@ -91,6 +106,7 @@ function triggerField(object, key) {
     await invoke('start_capture')
   }
   function update({ kind, trigger }) {
+    note(`capture: ${kind} ${trigger}`)
     if (kind === 'done') {
       object[key] = trigger
       caps.replaceChildren(...keyCaps(trigger))
@@ -120,7 +136,8 @@ async function disarm() {
 
 listen(CAPTURE_EVENT, ({ payload }) => {
   if (capturing) capturing.update(payload)
-})
+  else note(`capture event without a capture: ${JSON.stringify(payload)}`)
+}).then(() => note('listening for captures'))
 
 // A list of rows: draw(item, index) gives a row's controls; add() a new item.
 function rows(list, draw, add, addLabel) {
@@ -132,7 +149,7 @@ function rows(list, draw, add, addLabel) {
       h('button', { type: 'button', class: 'icon', title: 'Entfernen', onclick: () => { list.splice(index, 1); render() } }, '✕'))))
   }
   render()
-  return [container, h('button', { type: 'button', class: 'add', onclick: () => { list.push(add()); render() } }, addLabel)]
+  return [container, h('button', { type: 'button', class: 'add', onclick: () => { list.push(add()); render(); note(`added: ${addLabel}`) } }, addLabel)]
 }
 
 // ── Sections ──────────────────────────────────────────────────────────────────────────────────────────────────
@@ -277,6 +294,7 @@ async function load() {
   if (loaded.settings) {
     config = loaded.settings
     draw(loaded.path)
+    note(`loaded ${loaded.path}: ${config.triggers.length} triggers`)
   } else {
     config = null
     drawBroken(loaded)
@@ -291,6 +309,7 @@ document.getElementById('save').addEventListener('click', async () => {
   if (!config) return say('Erst „Mit Standardwerten neu beginnen“.', 'error')
   if (!numbersValid()) return say('Eine Zahl fehlt oder ist keine ganze Zahl ab 0.', 'error')
   try {
+    note('save clicked')
     await invoke('save_settings', { settings: config })
     say('Gespeichert und in Kraft.', 'ok')
   } catch (error) {
