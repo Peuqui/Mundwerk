@@ -18,7 +18,7 @@ pub use rdev_hook::run;
 
 #[cfg(windows)]
 mod windows_hook {
-    use std::sync::atomic::Ordering;
+    use std::sync::atomic::{AtomicBool, Ordering};
     use std::sync::OnceLock;
 
     use mundwerk_core::controller::{Event, Press};
@@ -34,6 +34,8 @@ mod windows_hook {
 
     // The hook procedures are plain functions; they reach the handler through this.
     static HANDLER: OnceLock<Handler> = OnceLock::new();
+    // Set at the first key the hook sees: the log then says once that keys arrive at all.
+    static KEYS_ARRIVE: AtomicBool = AtomicBool::new(false);
 
     /// Install the hooks and pump messages for them (low-level hooks are called on the thread that installed
     /// them, while it waits for messages). Does not return while the app runs.
@@ -65,6 +67,9 @@ mod windows_hook {
             // SAFETY: for WH_KEYBOARD_LL with HC_ACTION, lParam points to a KBDLLHOOKSTRUCT.
             let info = unsafe { &*(data.0 as *const KBDLLHOOKSTRUCT) };
             let own = is_own(info.dwExtraInfo);
+            if !KEYS_ARRIVE.swap(true, Ordering::Relaxed) {
+                log::info!("hook: the first key arrived (vk={:#x})", info.vkCode);
+            }
             if TRACE.load(Ordering::Relaxed) {
                 log::info!(
                     "hook: key message={:#x} vk={:#x} flags={:#x} extra={:#x} own={own}",

@@ -137,6 +137,46 @@ async function disarm() {
   running.cancel()
 }
 
+// The keys of a capture come from this page: while Mundwerk's own window is in front, Windows does not hand them to
+// its system hook (seen on Aragon: the mouse reached the hook, no key did). Mouse buttons still come from the hook.
+// While a capture runs, a key does nothing else here.
+const MODIFIER_CODES = ['ControlLeft', 'ControlRight', 'ShiftLeft', 'ShiftRight', 'AltLeft', 'AltRight', 'MetaLeft', 'MetaRight']
+// KeyboardEvent.code as the settings name keys (letters, digits and F1-F24 below).
+const CODE_NAMES = {
+  Space: 'Space', Enter: 'Enter', NumpadEnter: 'Enter', Tab: 'Tab', Escape: 'Escape', Backspace: 'Backspace', Insert: 'Insert',
+  Delete: 'Delete', Home: 'Home', End: 'End', PageUp: 'PageUp', PageDown: 'PageDown', ArrowUp: 'Up', ArrowDown: 'Down',
+  ArrowLeft: 'Left', ArrowRight: 'Right', Pause: 'Pause', ScrollLock: 'ScrollLock', CapsLock: 'CapsLock', PrintScreen: 'PrintScreen',
+}
+
+function keyName(code) {
+  if (/^Key[A-Z]$/.test(code)) return code.slice(3)
+  if (/^Digit[0-9]$/.test(code)) return code.slice(5)
+  if (/^F([1-9]|1[0-9]|2[0-4])$/.test(code)) return code
+  return CODE_NAMES[code] ?? null
+}
+
+window.addEventListener('keydown', (event) => {
+  if (!capturing) return
+  event.preventDefault()
+  event.stopPropagation()
+  // The order of the settings: Ctrl, Shift, Alt, Meta.
+  const held = [event.ctrlKey && 'Ctrl', event.shiftKey && 'Shift', event.altKey && 'Alt', event.metaKey && 'Meta'].filter(Boolean).join('+')
+  if (MODIFIER_CODES.includes(event.code)) return capturing.update({ kind: 'held', trigger: held })
+  const name = keyName(event.code)
+  const trigger = [held, name ?? event.code].filter(Boolean).join('+')
+  if (!name) return capturing.update({ kind: 'unusable', trigger })
+  // The hook's capture ends too, or it would take the next press somewhere else.
+  invoke('stop_capture')
+  capturing.update({ kind: 'done', trigger })
+}, true)
+
+window.addEventListener('keyup', (event) => {
+  if (!capturing) return
+  event.preventDefault()
+  const held = [event.ctrlKey && 'Ctrl', event.shiftKey && 'Shift', event.altKey && 'Alt', event.metaKey && 'Meta'].filter(Boolean).join('+')
+  if (MODIFIER_CODES.includes(event.code)) capturing.update({ kind: 'held', trigger: held })
+}, true)
+
 listen(CAPTURE_EVENT, ({ payload }) => {
   if (capturing) capturing.update(payload)
   else note(`capture event without a capture: ${JSON.stringify(payload)}`)
