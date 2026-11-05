@@ -42,6 +42,16 @@ Bedienungshilfe darf die Bildschirmtastatur ausblenden (`AccessibilityService.ge
 steht, keine Tastatur, die Blase diktiert hinein. Ein langer Druck auf die Blase holt die Tastatur zurück, wenn doch
 getippt werden soll.
 
+**Die Blase nur, wenn sie gebraucht wird** (Peuqui: dauernd sichtbar würde sie stören und Bildschirm verdecken): Der
+Dienst erfährt, wann ein Eingabefeld den Fokus bekommt und verliert (`TYPE_VIEW_FOCUSED`, Knoten `isEditable`). Die
+Blase erscheint also nur, solange ein Textfeld aktiv ist, klein neben ihm oder am Rand, und geht mit dem Fokus wieder;
+dazu verschiebbar und halb an den Rand zu schieben. Man sieht dann, was man jetzt sieht, nur ohne Tastatur und mit
+Mikrofon.
+
+**Oder ganz ohne Blase:** Der Dienst darf Hardwaretasten abfangen (`FLAG_REQUEST_FILTER_KEY_EVENTS`); ein langer Druck
+auf „Leiser“ könnte das Diktat starten und beenden, wie unter Windows die Seitentaste der Maus. Beides lässt sich
+verbinden.
+
 **An der Schreibmarke einfügen:** `ACTION_SET_TEXT` ersetzt das ganze Feld. Mundwerk liest deshalb den Text des Felds
 und die Stelle der Schreibmarke (`textSelectionStart`/`End`), setzt das Diktat dort ein (mit Leerzeichen davor, wenn
 nötig) und stellt die Marke dahinter (`ACTION_SET_SELECTION`). Bei gewöhnlichen Eingabefeldern geht das; Apps mit
@@ -63,9 +73,11 @@ nicht mitmacht.
 
 ## Offene Fragen
 
-- Welche Apps vor allem (Messenger, Browser, Notizen)? An ihnen zuerst prüfen, ob das Einfügen an der Schreibmarke
-  geht oder die Zwischenablage nötig ist.
-- Blase immer da oder nur im Diktat-Modus, und wie wird der Modus an- und ausgeschaltet?
+- Die Apps, um die es geht (Peuqui: alles, wo man sonst tippt): WhatsApp, E-Mail (FairEmail, Gmail), Browser. An ihnen
+  zuerst prüfen, ob das Einfügen an der Schreibmarke geht oder die Zwischenablage nötig ist. Erwartung: WhatsApp und
+  FairEmail haben gewöhnliche Eingabefelder (geht); Gmail Betreff und Empfänger ja, beim Textteil hängt es an der App;
+  im Browser gewöhnliche Formularfelder meist ja, Web-Editoren, die ihren Text selbst zeichnen, über die Zwischenablage.
+- Blase nur bei aktivem Textfeld, Leiser-Taste oder beides?
 - Reicht zu Hause, oder soll es von Anfang an unterwegs gehen (dann zuerst der Proxy)?
 - Android Auto: gewünscht? Dann Weg 2 und seine Grenzen dort genauer ansehen.
 - Bauen auf dem Mini: Android-SDK und Build-Tools wären neu zu installieren.
