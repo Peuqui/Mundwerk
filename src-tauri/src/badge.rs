@@ -14,9 +14,8 @@ pub const BADGE: &str = "badge";
 const PAGE: &str = "badge.html";
 /// As big as Agent-Orc's (logical pixels).
 const SIZE: LogicalSize<f64> = LogicalSize::new(28.0, 28.0);
-/// Above and right of the pointer's tip, close to it (Peuqui: Agent-Orc's +14/-38 was too far); the arrow reaches
-/// down and right from the tip, so the badge does not cover it (logical pixels).
-const OFFSET: LogicalPosition<f64> = LogicalPosition::new(8.0, -30.0);
+/// Above and right of the pointer's tip, exactly as Agent-Orc places it (its DictationPointer.vue; logical pixels).
+const OFFSET: LogicalPosition<f64> = LogicalPosition::new(14.0, -38.0);
 
 // While the badge shows, the hook's moves move it.
 static FOLLOWING: AtomicBool = AtomicBool::new(false);
