@@ -34,6 +34,11 @@ remembers its place and never takes the focus from the text field. The tray menu
 
 Off unless set: stopping after silence, a maximum recording length, Enter at the end.
 
+Mundwerk speaks German and English (`system.language`: `auto` follows the system's language, or `de`, `en`; switched at
+the top of the settings window). All words are in one file, [`ui/i18n.json`](ui/i18n.json), which the windows load and
+the app has built in; a test checks that both languages have the same keys and that every key in use exists. Another
+language is another block in that file.
+
 ## Settings
 
 Every setting with its default is in [`crates/mundwerk-core/default_config.toml`](crates/mundwerk-core/default_config.toml).

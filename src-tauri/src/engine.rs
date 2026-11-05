@@ -144,7 +144,7 @@ fn record(shared: &Shared, actions: &Receiver<Action>, reporter: &Reporter) {
     let player = match Player::new() {
         Ok(player) => Some(player),
         Err(error) => {
-            reporter.report(Status::Error(format!("sound output: {error}")));
+            reporter.report(Status::Error(format!("{}: {error}", texts::tr("error.sound"))));
             None
         }
     };
@@ -181,7 +181,7 @@ fn record(shared: &Shared, actions: &Receiver<Action>, reporter: &Reporter) {
                     Err(error) => {
                         // The controller believes it records: put it back, or the next press would "stop".
                         lock(&shared.controller).finish();
-                        reporter.report(Status::Error(format!("microphone: {error}")));
+                        reporter.report(Status::Error(format!("{}: {error}", texts::tr("error.microphone"))));
                     }
                 }
             }
@@ -218,7 +218,7 @@ fn transcribe(shared: &Shared, queue: &Receiver<Job>, reporter: &Reporter) {
     let mut inserter = match Inserter::new() {
         Ok(inserter) => Some(inserter),
         Err(error) => {
-            reporter.report(Status::Error(format!("typing: {error}")));
+            reporter.report(Status::Error(format!("{}: {error}", texts::tr("error.typing"))));
             None
         }
     };
@@ -246,7 +246,7 @@ fn one(shared: &Shared, audio: Audio, inserter: Option<&mut Inserter>) -> Result
         Ok(transcript) => transcript,
         Err(error) => {
             *lock(&shared.failed) = Some(audio);
-            return Err(format!("{error} – {}", texts::RESEND_HINT));
+            return Err(format!("{error} – {}", texts::tr("error.resend_hint")));
         }
     };
     log::info!(
@@ -261,7 +261,7 @@ fn one(shared: &Shared, audio: Audio, inserter: Option<&mut Inserter>) -> Result
         return Ok(());
     }
     lock(&shared.history).add(Entry { when: chrono::Local::now().format("%H:%M").to_string(), text: text.clone() });
-    inserter.ok_or("typing is not available")?.insert(&config.insert, &text)
+    inserter.ok_or_else(|| texts::tr("error.typing_unavailable"))?.insert(&config.insert, &text)
 }
 
 fn transcribe_audio(config: &Config, audio: &Audio) -> Result<mundwerk_core::stt::Transcript, String> {
@@ -273,9 +273,12 @@ fn transcribe_audio(config: &Config, audio: &Audio) -> Result<mundwerk_core::stt
 
 /// The newest dictation of the history once more, where the cursor is now.
 fn again(shared: &Shared, inserter: Option<&mut Inserter>) -> Result<(), String> {
-    let text =
-        lock(&shared.history).entries().next().map(|entry| entry.text.clone()).ok_or(texts::NOTHING_TO_REPEAT)?;
+    let text = lock(&shared.history)
+        .entries()
+        .next()
+        .map(|entry| entry.text.clone())
+        .ok_or_else(|| texts::tr("error.nothing_to_repeat"))?;
     log::info!("writing the last dictation again: {} characters", text.len());
     let settings = lock(&shared.config).insert.clone();
-    inserter.ok_or("typing is not available")?.insert(&settings, &text)
+    inserter.ok_or_else(|| texts::tr("error.typing_unavailable"))?.insert(&settings, &text)
 }

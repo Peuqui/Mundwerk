@@ -4,14 +4,15 @@ const { invoke } = window.__TAURI__.core
 const { listen } = window.__TAURI__.event
 
 const STATUS_EVENT = 'mundwerk://status'
-const TEXTS = { listening: 'Hört zu …', transcribing: 'Transkribiert …', idle: '' }
 
 const pill = document.getElementById('pill')
 const text = document.getElementById('text')
 
 listen(STATUS_EVENT, async ({ payload }) => {
+  // Read each time: the settings may have changed language and opacity.
+  await loadTexts()
   pill.className = payload.state
-  text.textContent = payload.state === 'error' ? payload.detail : TEXTS[payload.state]
-  // Read each time: the settings may have changed it.
+  const words = { listening: t('overlay.listening'), transcribing: t('overlay.transcribing'), error: payload.detail, idle: '' }
+  text.textContent = words[payload.state]
   pill.style.opacity = await invoke('overlay_opacity')
 })

@@ -181,6 +181,7 @@ pub struct History {
 #[serde(deny_unknown_fields)]
 pub struct System {
     pub autostart: bool,
+    pub language: crate::i18n::LanguageSetting,
 }
 
 impl Config {

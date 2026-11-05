@@ -37,6 +37,11 @@ starten: einstellbar.
 
 Aus, solange nicht anders eingestellt: Anhalten nach Stille, Höchstdauer einer Aufnahme, Enter am Ende.
 
+Mundwerk spricht Deutsch und Englisch (`system.language`: `auto` folgt der Systemsprache, oder `de`, `en`; oben im
+Einstellungsfenster umschaltbar). Alle Texte stehen in einer Datei, [`ui/i18n.json`](ui/i18n.json), die die Fenster
+laden und die App eingebaut hat; ein Test prüft, dass beide Sprachen dieselben Schlüssel haben und jeder benutzte
+Schlüssel existiert. Eine weitere Sprache ist ein weiterer Block in dieser Datei.
+
 ## Einstellungen
 
 Alle Einstellungen mit ihren Standardwerten stehen in

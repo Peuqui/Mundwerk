@@ -21,6 +21,7 @@ use mundwerk_core::capture::{Capture, Update};
 use mundwerk_core::controller::Event;
 
 use mundwerk_core::config::Config;
+use mundwerk_core::i18n::LanguageSetting;
 use tauri::{
     AppHandle, Emitter, LogicalSize, Manager, PhysicalPosition, RunEvent, WebviewUrl, WebviewWindowBuilder, WindowEvent,
 };
@@ -71,6 +72,7 @@ fn main() {
             settings::start_capture,
             settings::stop_capture,
             settings::page_log,
+            settings::ui_language,
             overlay_opacity,
         ])
         .setup(|app| {
@@ -99,15 +101,18 @@ fn setup(app: &AppHandle) -> Result<(), String> {
     // used.
     start_hook(app, capture, reporter.clone())?;
     let Ok(config) = Config::load_or_create(&config_path) else {
-        // Nothing runs on settings that cannot work: the settings window shows why; saving restarts.
+        // Nothing runs on settings that cannot work: the settings window shows why (in the system's language);
+        // saving restarts.
+        texts::set_language(LanguageSetting::Auto);
         settings::open(app);
         return Ok(());
     };
+    texts::set_language(config.system.language);
     let autostart = config.system.autostart;
     let shared = engine::start(config_path.clone(), config, reporter.clone())?;
     app.manage(Arc::clone(&shared));
     if let Err(error) = settings::set_autostart(app, autostart) {
-        reporter.report(Status::Error(format!("autostart: {error}")));
+        reporter.report(Status::Error(format!("{}: {error}", texts::tr("error.autostart"))));
     }
     create_overlay(app, &config_path).map_err(|error| error.to_string())?;
     tray::create(app).map_err(|error| error.to_string())?;
@@ -140,7 +145,7 @@ fn start_hook(app: &AppHandle, capture: CaptureState, reporter: Reporter) -> Res
         .name("hook".into())
         .spawn(move || {
             if let Err(error) = hook::run(Box::new(handler)) {
-                reporter.report(Status::Error(format!("keyboard and mouse hook: {error}")));
+                reporter.report(Status::Error(format!("{}: {error}", texts::tr("error.hook"))));
             }
         })
         .map(|_| ())
@@ -151,7 +156,7 @@ fn start_hook(app: &AppHandle, capture: CaptureState, reporter: Reporter) -> Res
 /// text goes to the field that has it), moved with the mouse anywhere, any screen.
 fn create_overlay(app: &AppHandle, config_path: &std::path::Path) -> tauri::Result<()> {
     let overlay = WebviewWindowBuilder::new(app, OVERLAY, WebviewUrl::App(OVERLAY_PAGE.into()))
-        .title(texts::APP)
+        .title(texts::tr("app"))
         .inner_size(OVERLAY_SIZE.width, OVERLAY_SIZE.height)
         .decorations(false)
         .transparent(true)

@@ -25,6 +25,7 @@ section > p.hint { margin: 0 0 10px; color: var(--muted); font-size: 13px; }
 .fields.spaced { margin-top: 12px; }
 .subheading { margin: 14px 0 6px; font-size: 13px; }
 input.short { max-width: 6em; }
+select.language { max-width: 320px; margin-top: 6px; }
 .fields .hint { grid-column: 2; margin-top: -4px; color: var(--muted); font-size: 12px; }
 
 input[type="text"], input[type="password"], input[type="number"], select {

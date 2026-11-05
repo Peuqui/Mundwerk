@@ -63,9 +63,9 @@ fn menu(app: &AppHandle) -> tauri::Result<Menu<Wry>> {
         .as_ref()
         .map(|shared| lock(&shared.history).entries().map(|entry| label(&entry.when, &entry.text)).collect())
         .unwrap_or_default();
-    let history = Submenu::new(app, texts::HISTORY, true)?;
+    let history = Submenu::new(app, texts::tr("tray.history"), true)?;
     if entries.is_empty() {
-        history.append(&MenuItem::new(app, texts::HISTORY_EMPTY, false, None::<&str>)?)?;
+        history.append(&MenuItem::new(app, texts::tr("tray.history_empty"), false, None::<&str>)?)?;
     }
     for (index, entry) in entries.iter().enumerate() {
         history.append(&MenuItem::with_id(app, format!("{HISTORY_PREFIX}{index}"), entry, true, None::<&str>)?)?;
@@ -73,18 +73,18 @@ fn menu(app: &AppHandle) -> tauri::Result<Menu<Wry>> {
     let menu = Menu::with_items(
         app,
         &[
-            &MenuItem::with_id(app, SETTINGS_ITEM, texts::SETTINGS, true, None::<&str>)?,
-            &CheckMenuItem::with_id(app, OVERLAY_ITEM, texts::OVERLAY_SHOWN, true, floating, None::<&str>)?,
+            &MenuItem::with_id(app, SETTINGS_ITEM, texts::tr("tray.settings"), true, None::<&str>)?,
+            &CheckMenuItem::with_id(app, OVERLAY_ITEM, texts::tr("tray.overlay"), true, floating, None::<&str>)?,
             &history,
         ],
     )?;
     // Only while a recording the STT-Suite did not transcribe waits.
     if shared.as_ref().is_some_and(|shared| shared.has_failed()) {
-        menu.append(&MenuItem::with_id(app, RESEND_ITEM, texts::RESEND, true, None::<&str>)?)?;
+        menu.append(&MenuItem::with_id(app, RESEND_ITEM, texts::tr("tray.resend"), true, None::<&str>)?)?;
     }
     menu.append(&PredefinedMenuItem::separator(app)?)?;
-    menu.append(&MenuItem::with_id(app, LOG_ITEM, texts::OPEN_LOG, true, None::<&str>)?)?;
-    menu.append(&MenuItem::with_id(app, QUIT_ITEM, texts::QUIT, true, None::<&str>)?)?;
+    menu.append(&MenuItem::with_id(app, LOG_ITEM, texts::tr("tray.open_log"), true, None::<&str>)?)?;
+    menu.append(&MenuItem::with_id(app, QUIT_ITEM, texts::tr("tray.quit"), true, None::<&str>)?)?;
     Ok(menu)
 }
 

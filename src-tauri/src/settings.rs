@@ -11,6 +11,7 @@ use std::time::Duration;
 use cpal::traits::{DeviceTrait, HostTrait};
 use mundwerk_core::capture::Capture;
 use mundwerk_core::config::{Config, OverlayMode, DEFAULT_CONFIG};
+use mundwerk_core::i18n::{Language, LanguageSetting};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager, PhysicalPosition, State, WebviewUrl, WebviewWindowBuilder, WindowEvent};
 use tauri_plugin_autostart::ManagerExt;
@@ -37,7 +38,7 @@ pub fn open(app: &AppHandle) {
         return;
     }
     let built = WebviewWindowBuilder::new(app, SETTINGS, WebviewUrl::App(SETTINGS_PAGE.into()))
-        .title(texts::SETTINGS_TITLE)
+        .title(texts::tr("settings.title"))
         .inner_size(820.0, 860.0)
         .build();
     match built {
@@ -124,6 +125,12 @@ pub fn stop_capture(capture: State<'_, CaptureState>) {
     crate::hook::TRACE.store(false, std::sync::atomic::Ordering::Relaxed);
 }
 
+/// The language the pages show: of `setting` (the settings page while it is changed there), or the app's.
+#[tauri::command]
+pub fn ui_language(setting: Option<LanguageSetting>) -> Language {
+    setting.map_or_else(texts::language, |setting| setting.resolve(sys_locale::get_locale().as_deref()))
+}
+
 /// What the settings page reports for the log: its errors and the steps of a capture.
 // Tauri hands a command its arguments by value.
 #[allow(clippy::needless_pass_by_value)]
@@ -152,6 +159,12 @@ pub fn toggle_overlay(app: &AppHandle) {
 
 fn take_effect(app: &AppHandle, shared: &Shared, config: Config) -> Result<(), String> {
     set_autostart(app, config.system.autostart)?;
+    texts::set_language(config.system.language);
+    if let Some(window) = app.get_webview_window(SETTINGS) {
+        if let Err(error) = window.set_title(&texts::tr("settings.title")) {
+            log::error!("settings window title: {error}");
+        }
+    }
     shared.apply(config)?;
     if let Some(reporter) = app.try_state::<Reporter>() {
         reporter.report(shared.status());

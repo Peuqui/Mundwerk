@@ -6,6 +6,7 @@ pub mod capture;
 pub mod config;
 pub mod controller;
 pub mod history;
+pub mod i18n;
 pub mod replace;
 pub mod spacing;
 pub mod stt;

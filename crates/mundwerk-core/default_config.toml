@@ -94,3 +94,5 @@ size = 50
 [system]
 # Start with the system.
 autostart = false
+# The language of Mundwerk's windows and menu: auto (the system's), de or en.
+language = "auto"
