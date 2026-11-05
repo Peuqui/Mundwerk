@@ -167,6 +167,11 @@ MUNDWERK_LIVE_URL=http://127.0.0.1:5080 MUNDWERK_LIVE_TOKEN_FILE=~/.config/stt-s
   English; a test checks that both languages have the same keys and that every key in use exists. Another language is
   another block in that file.
 
+## Ideas
+
+- [Mundwerk on Android](docs/android.de.md) (German): a voice input keyboard or a floating bubble, with one's own
+  STT-Suite instead of Gboard's. A discussion, not started.
+
 ## Star History
 
 ![Star History](https://raw.githubusercontent.com/Peuqui/Traffic/main/data/Mundwerk/star-history.svg)

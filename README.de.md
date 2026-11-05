@@ -173,6 +173,11 @@ MUNDWERK_LIVE_URL=http://127.0.0.1:5080 MUNDWERK_LIVE_TOKEN_FILE=~/.config/stt-s
   Englisch; ein Test prüft, dass beide Sprachen dieselben Schlüssel haben und jeder benutzte Schlüssel existiert. Eine
   weitere Sprache ist ein weiterer Block in dieser Datei.
 
+## Ideen
+
+- [Mundwerk auf Android](docs/android.de.md): eine Spracheingabe-Tastatur oder eine schwebende Blase, mit der eigenen
+  STT-Suite statt Gboard. Diskussion, nicht begonnen.
+
 ## Star History
 
 ![Star History](https://raw.githubusercontent.com/Peuqui/Traffic/main/data/Mundwerk/star-history.svg)
