@@ -73,6 +73,7 @@ fn main() {
             settings::stop_capture,
             settings::page_log,
             settings::ui_language,
+            settings::play_sound,
             overlay_opacity,
         ])
         .setup(|app| {

@@ -124,6 +124,7 @@
     "sounds.pong": "Pong (tiefer)",
     "sounds.break": "Break (hoch, dann tief)",
     "sounds.own_file": "Eigene WAV-Datei …",
+    "sounds.listen": "Anhören",
     "sounds.path": "C:\\Pfad\\zum\\Ton.wav",
 
     "insert.title": "Einfügen",
@@ -288,6 +289,7 @@
     "sounds.pong": "Pong (lower)",
     "sounds.break": "Break (high, then low)",
     "sounds.own_file": "Own WAV file …",
+    "sounds.listen": "Listen",
     "sounds.path": "C:\\path\\to\\sound.wav",
 
     "insert.title": "Writing",

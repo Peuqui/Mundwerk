@@ -125,6 +125,15 @@ pub fn stop_capture(capture: State<'_, CaptureState>) {
     crate::hook::TRACE.store(false, std::sync::atomic::Ordering::Relaxed);
 }
 
+/// Play a sound to listen to it, as the window has it now (not saved yet): `source` as the settings write it
+/// (`builtin:ping` or a WAV file), at `volume_percent`.
+// Tauri hands a command its arguments by value.
+#[allow(clippy::needless_pass_by_value)]
+#[tauri::command]
+pub fn play_sound(source: String, volume_percent: u8) -> Result<(), String> {
+    crate::sound::preview(&source, volume_percent)
+}
+
 /// The language the pages show: of `setting` (the settings page while it is changed there), or the app's.
 #[tauri::command]
 pub fn ui_language(setting: Option<LanguageSetting>) -> Language {

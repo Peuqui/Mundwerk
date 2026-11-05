@@ -274,7 +274,10 @@ function soundField(key) {
     path.hidden = state.kind !== OWN_FILE
     sounds[key] = state.kind === OWN_FILE ? path.value : BUILTIN_PREFIX + state.kind
   })
-  return h('span', { class: 'inline' }, select, path)
+  // Plays what is chosen now, at the volume set now, also before saving.
+  const listen = h('button', { type: 'button', class: 'icon', title: t('sounds.listen'), 'aria-label': t('sounds.listen'),
+    onclick: () => invoke('play_sound', { source: sounds[key], volumePercent: sounds.volume_percent }).catch((error) => say(String(error), 'error')) }, '▶')
+  return h('span', { class: 'inline' }, select, path, listen)
 }
 
 function sounds() {
