@@ -16,8 +16,7 @@ macOS und Linux zu laufen.
 - **Auslöser:** jede Taste, Tastenkombination oder Maustaste (Mitte, Seitentasten), jeweils *gedrückt halten* (hört zu,
   solange gehalten) oder *an und aus* (ein Druck startet, der nächste beendet). Im Einstellungsfenster live aufgenommen:
   drücken, und er ist gesetzt. Auch eine Kombination, die die Software einer Maus sendet, zählt.
-- **Töne** bei Start, Ende und Abbruch (ping, pong und break des Echo Dot, sein Dong-Ding und Ding-Dong oder eine eigene
-  WAV-Datei), jeder in den Einstellungen anhörbar.
+- **Töne** bei Start, Ende und Abbruch (ping, pong, break, Dong-Ding, Ding-Dong oder eine eigene WAV-Datei), jeder in den Einstellungen anhörbar.
 - **Schreibt ins aktive Feld**, getippt (Unicode, mit Umlauten, ohne die Zwischenablage zu berühren) oder eingefügt, je
   Programm wählbar; ein Leerzeichen zwischen zwei Diktaten ins selbe Fenster; auf Wunsch Enter am Ende (schickt eine
   Chat-Nachricht sofort ab).
@@ -166,7 +165,6 @@ MUNDWERK_LIVE_URL=http://127.0.0.1:5080 MUNDWERK_LIVE_TOKEN_FILE=~/.config/stt-s
 - `ui/`: die Seiten (HTML, CSS, JavaScript ohne Bauschritt) und `i18n.json`, alle Texte von Mundwerk auf Deutsch und
   Englisch; ein Test prüft, dass beide Sprachen dieselben Schlüssel haben und jeder benutzte Schlüssel existiert. Eine
   weitere Sprache ist ein weiterer Block in dieser Datei.
-- `assets/sounds`: die Töne, aus FreeEcho.2 (Peuquis Echo-Dot-Projekt, nicht öffentlich), dort algorithmisch erzeugt.
 
 ## Star History
 
@@ -176,4 +174,4 @@ MUNDWERK_LIVE_URL=http://127.0.0.1:5080 MUNDWERK_LIVE_TOKEN_FILE=~/.config/stt-s
 
 ## Lizenz
 
-[PolyForm Noncommercial 1.0.0](LICENSE). Die Töne in `assets/sounds` stammen aus FreeEcho.2 (MIT, © 2026 Peuqui).
+[PolyForm Noncommercial 1.0.0](LICENSE)

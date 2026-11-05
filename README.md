@@ -15,8 +15,7 @@ Mundwerk is a small tray app for Windows (Rust and [Tauri](https://tauri.app)), 
 - **Triggers:** any key, key combination or mouse button (middle, side buttons), each either *hold* (listens while held)
   or *toggle* (one press starts, the next stops). Taken live in the settings window: press it, and it is set. A
   combination a mouse's own software sends counts too.
-- **Sounds** at start, end and cancel (the Echo Dot's ping, pong and break, its dong-ding and ding-dong, or a WAV file of
-  your own), each to listen to in the settings.
+- **Sounds** at start, end and cancel (ping, pong, break, dong-ding, ding-dong, or a WAV file of your own), each to listen to in the settings.
 - **Writes into the focused field**, typed (Unicode, umlauts included, the clipboard untouched) or pasted, chosen per
   program; a space between two dictations into the same window; Enter at the end if you like (sends a chat message at
   once).
@@ -161,7 +160,6 @@ MUNDWERK_LIVE_URL=http://127.0.0.1:5080 MUNDWERK_LIVE_TOKEN_FILE=~/.config/stt-s
 - `ui/`: the pages (HTML, CSS, JavaScript without a build step) and `i18n.json`, all words of Mundwerk in German and
   English; a test checks that both languages have the same keys and that every key in use exists. Another language is
   another block in that file.
-- `assets/sounds`: the sounds, from FreeEcho.2 (Peuqui's Echo Dot project, not public), made there by algorithm.
 
 ## Star History
 
@@ -171,4 +169,4 @@ MUNDWERK_LIVE_URL=http://127.0.0.1:5080 MUNDWERK_LIVE_TOKEN_FILE=~/.config/stt-s
 
 ## License
 
-[PolyForm Noncommercial 1.0.0](LICENSE). The sounds in `assets/sounds` come from FreeEcho.2 (MIT, © 2026 Peuqui).
+[PolyForm Noncommercial 1.0.0](LICENSE)

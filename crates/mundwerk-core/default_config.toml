@@ -43,8 +43,7 @@ silence_level_percent = 1
 
 [sounds]
 enabled = true
-# builtin:<name> = a sound that comes with Mundwerk (the Echo Dot's ping, pong and break, and its notification sounds
-# ding_dong and dong_ding), otherwise a WAV file.
+# builtin:<name> = a sound that comes with Mundwerk (ping, pong, break, ding_dong, dong_ding), otherwise a WAV file.
 start = "builtin:ping"
 stop = "builtin:pong"
 cancel = "builtin:break"

@@ -1,5 +1,5 @@
-//! The sounds at start, end and cancel: built in (the Echo Dot's ping, pong and break, and its notification sounds
-//! Ding-Dong and Dong-Ding) or a WAV file. The settings window plays one to listen to it before it is saved.
+//! The sounds at start, end and cancel: built in (ping, pong, break, Ding-Dong, Dong-Ding) or a WAV file. The settings
+//! window plays one to listen to it before it is saved.
 
 use std::io::Cursor;
 
