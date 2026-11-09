@@ -20,7 +20,7 @@ use mundwerk_core::wav;
 
 use crate::audio::{self, Recording};
 use crate::insert::Inserter;
-use crate::sound::{Cue, Player};
+use crate::sound::{self, Cue};
 use crate::status::{Reporter, Status};
 use crate::texts;
 
@@ -140,21 +140,11 @@ enum Job {
 }
 
 fn record(shared: &Shared, actions: &Receiver<Action>, reporter: &Reporter) {
-    // The audio output is opened on this thread and lives with it (it cannot move between threads).
-    let player = match Player::new() {
-        Ok(player) => Some(player),
-        Err(error) => {
-            reporter.report(Status::Error(format!("{}: {error}", texts::tr("error.sound"))));
-            None
-        }
-    };
     let play = |cue, to_end| {
-        if let Some(player) = &player {
-            // A copy: waiting for a sound's end must not hold the settings.
-            let sounds = lock(&shared.config).sounds.clone();
-            if let Err(error) = player.play(&sounds, cue, to_end) {
-                reporter.report(Status::Error(error));
-            }
+        // A copy: waiting for a sound's end must not hold the settings.
+        let sounds = lock(&shared.config).sounds.clone();
+        if let Err(error) = sound::play(&sounds, cue, to_end) {
+            reporter.report(Status::Error(format!("{}: {error}", texts::tr("error.sound"))));
         }
     };
     let mut current: Option<Recording> = None;

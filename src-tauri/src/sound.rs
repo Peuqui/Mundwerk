@@ -2,9 +2,11 @@
 //! window plays one to listen to it before it is saved.
 
 use std::io::Cursor;
+use std::sync::mpsc;
+use std::thread::JoinHandle;
 
 use mundwerk_core::config::{fraction, Sounds};
-use rodio::{Decoder, OutputStream, OutputStreamHandle, Sink};
+use rodio::{Decoder, OutputStream, Sink};
 
 const BUILTIN_PREFIX: &str = "builtin:";
 const BUILTIN: &[(&str, &[u8])] = &[
@@ -20,63 +22,61 @@ pub enum Cue {
     Cancel,
 }
 
-pub struct Player {
-    // The output stays open for the life of the player; dropping it silences every sound.
-    _stream: OutputStream,
-    handle: OutputStreamHandle,
-}
-
-impl Player {
-    pub fn new() -> Result<Self, String> {
-        let (stream, handle) = OutputStream::try_default().map_err(|error| error.to_string())?;
-        Ok(Self { _stream: stream, handle })
+/// Play the sound for `cue`; `to_end`: return only when it has ended (the start sound, before the microphone
+/// opens: an open microphone turns a headset to its telephone mode, and the sound would come quiet, cut or with
+/// an echo, and into the recording; Agent-Orc does it the same way).
+pub fn play(sounds: &Sounds, cue: Cue, to_end: bool) -> Result<(), String> {
+    if !sounds.enabled {
+        return Ok(());
     }
-
-    /// Play the sound for `cue`; `to_end`: return only when it has ended (the start sound, before the microphone
-    /// opens: an open microphone turns a headset to its telephone mode, and the sound would come quiet, cut or with
-    /// an echo, and into the recording; Agent-Orc does it the same way).
-    pub fn play(&self, sounds: &Sounds, cue: Cue, to_end: bool) -> Result<(), String> {
-        if !sounds.enabled {
-            return Ok(());
-        }
-        let source = match cue {
-            Cue::Start => &sounds.start,
-            Cue::Stop => &sounds.stop,
-            Cue::Cancel => &sounds.cancel,
-        };
-        let sink = self.start(source, sounds.volume_percent)?;
-        if to_end {
-            sink.sleep_until_end();
-        } else {
-            sink.detach();
-        }
-        Ok(())
+    let source = match cue {
+        Cue::Start => &sounds.start,
+        Cue::Stop => &sounds.stop,
+        Cue::Cancel => &sounds.cancel,
+    };
+    let playing = start(source, sounds.volume_percent)?;
+    if to_end {
+        // A thread that panicked has ended its sound as well.
+        let _ = playing.join();
     }
-
-    /// The sound playing; it stops when the returned sink is dropped unless it is detached.
-    fn start(&self, source: &str, volume_percent: u8) -> Result<Sink, String> {
-        let sink = Sink::try_new(&self.handle).map_err(|error| error.to_string())?;
-        sink.set_volume(fraction(volume_percent));
-        sink.append(decode(source)?);
-        Ok(sink)
-    }
-}
-
-/// Play `source` once, to listen to it (the settings window). A sound that cannot be read is said at once; the
-/// sound itself plays on a thread of its own, with an output of its own (an output cannot move between threads).
-pub fn preview(source: &str, volume_percent: u8) -> Result<(), String> {
-    decode(source)?;
-    let source = source.to_owned();
-    std::thread::spawn(move || {
-        let played = Player::new().and_then(|player| {
-            player.start(&source, volume_percent)?.sleep_until_end();
-            Ok(())
-        });
-        if let Err(error) = played {
-            log::error!("sound preview: {error}");
-        }
-    });
     Ok(())
+}
+
+/// Play `source` once, to listen to it (the settings window).
+pub fn preview(source: &str, volume_percent: u8) -> Result<(), String> {
+    start(source, volume_percent).map(drop)
+}
+
+/// Play `source` on the output that is the default now, on a thread of its own (an output cannot move between
+/// threads); returns once it plays, with the thread, which ends with the sound. Opened anew for every sound: an
+/// output kept open since the start went silent with its device (headset off, screen asleep), and waiting for
+/// the end of a sound on it never returned, so no dictation started any more.
+fn start(source: &str, volume_percent: u8) -> Result<JoinHandle<()>, String> {
+    let decoded = decode(source)?;
+    let (opened, outcome) = mpsc::channel();
+    let thread = std::thread::Builder::new()
+        .name("sound".into())
+        .spawn(move || {
+            let output = OutputStream::try_default().map_err(|error| error.to_string()).and_then(|(stream, handle)| {
+                let sink = Sink::try_new(&handle).map_err(|error| error.to_string())?;
+                sink.set_volume(fraction(volume_percent));
+                sink.append(decoded);
+                Ok((stream, sink))
+            });
+            match output {
+                // The stream lives until the sound has ended; dropping it would silence the sound.
+                Ok((_stream, sink)) => {
+                    let _ = opened.send(Ok(()));
+                    sink.sleep_until_end();
+                }
+                Err(error) => {
+                    let _ = opened.send(Err(error));
+                }
+            }
+        })
+        .map_err(|error| error.to_string())?;
+    outcome.recv().map_err(|error| error.to_string())??;
+    Ok(thread)
 }
 
 fn decode(source: &str) -> Result<Decoder<Cursor<Vec<u8>>>, String> {

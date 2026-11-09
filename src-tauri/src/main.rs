@@ -52,8 +52,12 @@ pub struct Startup {
 
 fn main() {
     let app = tauri::Builder::default()
-        // A second start opens the settings of the first instead.
-        .plugin(tauri_plugin_single_instance::init(|app, _arguments, _folder| settings::open(app)))
+        // A second start opens the settings of the first instead; logged with what started it, so a start that
+        // nobody meant (an autostart, Windows restoring apps) can be found.
+        .plugin(tauri_plugin_single_instance::init(|app, arguments, folder| {
+            log::info!("second start (arguments {arguments:?}, folder {folder:?}): opening the settings");
+            settings::open(app);
+        }))
         .plugin(tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, None))
         .plugin(
             tauri_plugin_log::Builder::new()
