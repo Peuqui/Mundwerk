@@ -75,7 +75,9 @@ the tray under *Send the last recording again*.
 editor. Windows Terminal and most programs take that as typing. A program that does not (some remote desktops, older
 consoles) gets the text pasted instead: under *Writing*, *Programs with their own method*, its process name (e.g.
 `mstsc.exe`) with *through the clipboard*; Mundwerk then puts the text into the clipboard, presses Ctrl+V and puts back
-what the clipboard held.
+what the clipboard held. The text is written only once Ctrl, Shift, Alt and the Windows key are let go: otherwise a
+letter would arrive as a shortcut (a console shows `^T`), for instance while a mouse button's macro still holds them
+and the text is already back.
 
 ## Overlay and badge
 

@@ -81,7 +81,9 @@ Aufnahme wartet im Infobereich unter *Letzte Aufnahme erneut senden*.
 Windows Terminal und die meisten Programme nehmen das als Tippen. Ein Programm, das das nicht tut (manche Remote-Desktops,
 ältere Konsolen), bekommt den Text stattdessen eingefügt: unter *Einfügen*, *Programme mit eigener Methode*, seinen
 Prozessnamen (etwa `mstsc.exe`) mit *über die Zwischenablage*. Mundwerk legt den Text dann in die Zwischenablage, drückt
-Strg+V und stellt zurück, was die Zwischenablage vorher hatte.
+Strg+V und stellt zurück, was die Zwischenablage vorher hatte. Geschrieben wird erst, wenn Strg, Umschalt, Alt und
+die Windows-Taste losgelassen sind: Sonst käme ein Buchstabe als Tastenkürzel an (eine Konsole zeigt `^T`), etwa
+wenn das Makro einer Maustaste sie noch hält, während der Text schon da ist.
 
 ## Overlay und Logo
 

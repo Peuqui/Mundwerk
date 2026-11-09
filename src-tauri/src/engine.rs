@@ -11,11 +11,12 @@ use std::sync::mpsc::{self, Receiver, RecvTimeoutError, Sender};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use std::time::{Duration, Instant};
 
-use mundwerk_core::config::{fraction, Config};
+use mundwerk_core::config::{fraction, Config, Insert};
 use mundwerk_core::controller::{Action, Controller, Event};
 use mundwerk_core::history::{Entry, History};
 use mundwerk_core::replace::Replacer;
 use mundwerk_core::stt::SttClient;
+use mundwerk_core::trigger::Modifiers;
 use mundwerk_core::wav;
 
 use crate::audio::{self, Recording};
@@ -26,6 +27,8 @@ use crate::texts;
 
 /// How often the recorder looks at silence and length while it records.
 const TICK: Duration = Duration::from_millis(100);
+/// How often typing looks whether the modifiers are let go.
+const MODIFIER_POLL: Duration = Duration::from_millis(20);
 
 pub struct Shared {
     pub config_path: PathBuf,
@@ -254,7 +257,7 @@ fn one(shared: &Shared, audio: Audio, inserter: Option<&mut Inserter>) -> Result
         return Ok(());
     }
     lock(&shared.history).add(Entry { when: chrono::Local::now().format("%H:%M").to_string(), text: text.clone() });
-    inserter.ok_or_else(|| texts::tr("error.typing_unavailable"))?.insert(&config.insert, &text)
+    write(shared, inserter, &config.insert, &text)
 }
 
 fn transcribe_audio(config: &Config, audio: &Audio) -> Result<mundwerk_core::stt::Transcript, String> {
@@ -273,5 +276,20 @@ fn again(shared: &Shared, inserter: Option<&mut Inserter>) -> Result<(), String>
         .ok_or_else(|| texts::tr("error.nothing_to_repeat"))?;
     log::info!("writing the last dictation again: {} characters", text.len());
     let settings = lock(&shared.config).insert.clone();
-    inserter.ok_or_else(|| texts::tr("error.typing_unavailable"))?.insert(&settings, &text)
+    write(shared, inserter, &settings, &text)
+}
+
+/// Write `text` where the cursor is, once no modifier is held any more: a mouse's macro (Ctrl+Shift+Alt+D) may
+/// still hold them when the transcript is back, and a letter typed with Ctrl arrives as a shortcut (lost in most
+/// programs, `^T` in a console). Waits as long as they are held; the log says that it waits.
+fn write(shared: &Shared, inserter: Option<&mut Inserter>, settings: &Insert, text: &str) -> Result<(), String> {
+    let inserter = inserter.ok_or_else(|| texts::tr("error.typing_unavailable"))?;
+    let held = lock(&shared.controller).held_modifiers();
+    if held != Modifiers::default() {
+        log::info!("typing waits until {} are let go", held.names().join("+"));
+        while lock(&shared.controller).held_modifiers() != Modifiers::default() {
+            std::thread::sleep(MODIFIER_POLL);
+        }
+    }
+    inserter.insert(settings, text)
 }

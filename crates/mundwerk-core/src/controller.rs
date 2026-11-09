@@ -110,6 +110,13 @@ impl Controller {
         })
     }
 
+    /// The modifiers held now, as the hook saw them (a mouse's macro included). Typing waits until none is: a
+    /// letter typed while Ctrl is held arrives as a shortcut (a console shows `^T`).
+    #[must_use]
+    pub fn held_modifiers(&self) -> Modifiers {
+        self.modifiers
+    }
+
     #[must_use]
     pub fn is_recording(&self) -> bool {
         matches!(self.state, State::Recording { .. })
@@ -249,6 +256,18 @@ mod tests {
 
     fn mouse(name: &str, press: Press) -> Event {
         Event::Mouse(name.into(), press)
+    }
+
+    #[test]
+    fn the_modifiers_held_are_known_until_let_go() {
+        let mut controller = controller();
+        let now = Instant::now();
+        controller.handle(&Event::Modifier(Modifier::Ctrl, Press::Down), now);
+        controller.handle(&Event::Modifier(Modifier::Shift, Press::Down), now);
+        assert_eq!(controller.held_modifiers().names(), ["Ctrl", "Shift"]);
+        controller.handle(&Event::Modifier(Modifier::Ctrl, Press::Up), now);
+        controller.handle(&Event::Modifier(Modifier::Shift, Press::Up), now);
+        assert_eq!(controller.held_modifiers(), Modifiers::default());
     }
 
     const LONG: Duration = Duration::from_millis(800);
