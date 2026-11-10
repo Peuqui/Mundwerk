@@ -40,7 +40,7 @@ README's section *Security* says how. The token is in `~/.config/stt-suite/token
 file without installation; Windows 10 and 11 bring the WebView2 it needs. Windows SmartScreen warns about an unsigned
 program the first time: *More info*, then *Run anyway*.
 
-**3. First start.** No window opens: Mundwerk sits in the tray (a blue speech bubble with a microphone, maybe behind the
+**3. First start.** No window opens: Mundwerk sits in the tray (the yellow-orange sound waves of the STT-Suite, maybe behind the
 `^`). Its menu has the settings, the overlay switch, the history, *send again*, the log and *quit*. In the settings:
 
 - under *STT-Suite*, the addresses of your suite (tried top to bottom) and its **token**;
@@ -84,8 +84,8 @@ and the text is already back.
 The **overlay** (listening, transcribing, errors) never takes the focus from the text field. By default it shows below
 and right of the text cursor, on that screen. Many programs (browsers, Electron and others that draw their own text) do
 not tell Windows where their text cursor is; then it shows by the mouse pointer. Or a fixed place, moved with the mouse,
-on any screen. The tray menu switches it off; then the tray icon alone shows the state (blue ready, red listening,
-orange transcribing).
+on any screen. The tray menu switches it off; then the tray icon alone shows the state (orange ready, red listening,
+grey transcribing, dark red an error).
 
 The **badge** by the mouse pointer is Agent-Orc's dictation badge: the STT-Suite's logo in amber, above and right of the
 pointer's tip, moving with it while a dictation runs: its bars move and its rim is red while it listens (red also where

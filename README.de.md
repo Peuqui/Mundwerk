@@ -43,7 +43,7 @@ Aufrufe von einem anderen Rechner braucht die Suite ihr Token und muss über ihr
 einzelne Datei ohne Installation; Windows 10 und 11 bringen das nötige WebView2 mit. Windows SmartScreen warnt beim
 ersten Start vor einem nicht signierten Programm: *Weitere Informationen*, dann *Trotzdem ausführen*.
 
-**3. Erster Start.** Es öffnet sich kein Fenster: Mundwerk sitzt im Infobereich (eine blaue Sprechblase mit Mikrofon,
+**3. Erster Start.** Es öffnet sich kein Fenster: Mundwerk sitzt im Infobereich (die gelb-orangen Schallwellen der STT-Suite,
 eventuell hinter dem `^`). Sein Menü hat die Einstellungen, den Overlay-Schalter, den Verlauf, *erneut senden*, das
 Protokoll und *Beenden*. In den Einstellungen:
 
@@ -91,7 +91,7 @@ Das **Overlay** (hört zu, transkribiert, Fehler) nimmt dem Textfeld nie den Fok
 rechts neben der Schreibmarke, auf deren Bildschirm. Viele Programme (Browser, Electron und andere, die ihren Text selbst
 zeichnen) sagen Windows nicht, wo ihre Schreibmarke steht; dann erscheint es neben dem Mauszeiger. Alternativ ein fester
 Platz, mit der Maus verschiebbar, auf jedem Bildschirm. Im Menü des Infobereichs lässt es sich abschalten; dann zeigt nur
-das Symbol den Zustand (blau bereit, rot hört zu, orange transkribiert).
+das Symbol den Zustand (orange bereit, rot hört zu, grau transkribiert, dunkelrot ein Fehler).
 
 Das **Logo am Mauszeiger** ist das Diktat-Abzeichen von Agent-Orc: das Logo der STT-Suite in Bernstein, oben rechts an der
 Spitze des Zeigers, und es wandert mit, solange diktiert wird: Beim Zuhören bewegen sich seine Balken und sein Rand ist
