@@ -98,7 +98,7 @@ Das **Logo am Mauszeiger** ist das Diktat-Abzeichen aller Programme (seine eine 
 Spitze des Zeigers, und es wandert mit, solange diktiert wird: Beim Zuhören bewegen sich seine Balken und sein Rand ist
 rot (rot auch, wo Bewegung abgeschaltet ist), beim Transkribieren steht es still und grau. Der Mauszeiger selbst bleibt,
 wie er ist. Abschaltbar. Die Symbole im Infobereich und das Programm-Icon (`src-tauri/icons/`, `ui/icon.png`) sind dasselbe
-Abzeichen, erzeugt aus dieser Quelle mit `scripts/render_badge_icons.py` der STT-Suite; keines wird von Hand bearbeitet.
+Abzeichen, erzeugt aus dieser Quelle mit `scripts/render_badge_icons.py` der STT-Suite; keines wird von Hand bearbeitet. `docs/icons.png` ist die Übersicht aller Symbole (entsteht mit ihnen und ist deshalb nie veraltet).
 
 Die **Töne** kommen in einer Reihenfolge, die auch einem Headset passt: Der Startton spielt bis zu seinem Ende, bevor das
 Mikrofon aufgeht, End- und Abbruchton erst, wenn es geschlossen ist (ein offenes Mikrofon schaltet viele Headsets in den
