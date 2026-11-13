@@ -1,26 +1,8 @@
-/* As Agent-Orc's DictationBadge.vue animates it. */
 html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; }
-/* 28 px as in Agent-Orc, at the window's top left: Windows makes a window no smaller than its minimum size (about
+/* The look and the phases of the badge are the STT-Suite's (dictation-badge.css, copied from there). Here only where it
+   sits: 28 px as in Agent-Orc, at the window's top left: Windows makes a window no smaller than its minimum size (about
    136 x 39), so filling the window would make the badge bigger and centre it far from the pointer. The rest of the
    window is clear and lets clicks through. */
-#badge { display: block; width: 28px; height: 28px; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5)); }
-.bar { transform-box: fill-box; transform-origin: center; animation: level 0.9s ease-in-out infinite; }
-.bar:nth-child(2) { animation-delay: -0.6s; }
-.bar:nth-child(3) { animation-delay: -0.3s; }
-.bar:nth-child(4) { animation-delay: -0.75s; }
-.bar:nth-child(5) { animation-delay: -0.45s; }
-.arc { animation: glow 1.2s ease-in-out infinite; }
-/* Agent-Orc's: yellow at rest (the old microphone's), red while it listens, grey through the filter while it
-   transcribes. The exact values of its Tailwind 4 (amber-300, red-500), so both look the same. */
-.rim { stroke: oklch(87.9% 0.169 91.605); }
-/* Red while it listens (Peuqui), as Agent-Orc's accent. */
-.listening .rim { stroke: oklch(63.7% 0.237 25.331); }
-.arc.far { animation-delay: -0.6s; }
-/* With the shadow of #badge, which would otherwise win over the grey. */
-#badge.transcribing { filter: grayscale(1) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5)); opacity: 0.6; }
-.transcribing .bar, .transcribing .arc { animation: none; }
-@media (prefers-reduced-motion: reduce) {
-  .bar, .arc { animation: none; }
-}
-@keyframes level { 0%, 100% { transform: scaleY(0.45); } 50% { transform: scaleY(1); } }
-@keyframes glow { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
+.dictation-badge { display: block; width: 28px; height: 28px; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5)); }
+/* With the shadow, which would otherwise win over the grey (the source's grey is a filter of its own). */
+.dictation-badge.transcribing { filter: grayscale(1) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5)); }
