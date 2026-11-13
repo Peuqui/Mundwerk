@@ -84,12 +84,14 @@ and the text is already back.
 The **overlay** (listening, transcribing, errors) never takes the focus from the text field. By default it shows below
 and right of the text cursor, on that screen. Many programs (browsers, Electron and others that draw their own text) do
 not tell Windows where their text cursor is; then it shows by the mouse pointer. Or a fixed place, moved with the mouse,
-on any screen. The tray menu switches it off; then the tray icon alone shows the state (orange ready, red listening,
-grey transcribing, dark red an error).
+on any screen. The tray menu switches it off; then the tray icon alone shows the state: the badge below in its state (yellow rim ready, red rim listening,
+grey transcribing, dark red rim and grey bars an error).
 
-The **badge** by the mouse pointer is Agent-Orc's dictation badge: the STT-Suite's logo in amber, above and right of the
+The **badge** by the mouse pointer is the dictation badge of every program (its one source is STT-Suite/ui/badge/): the STT-Suite's logo in a round badge, above and right of the
 pointer's tip, moving with it while a dictation runs: its bars move and its rim is red while it listens (red also where
-motion is reduced), it is still and grey while it transcribes. The pointer itself stays as it is. It can be switched
+motion is reduced), it is still and grey while it transcribes. The pointer itself stays as it is. The tray and program icons
+(`src-tauri/icons/`, `ui/icon.png`) are the same badge, made from that source by the STT-Suite's `scripts/render_badge_icons.py`;
+none of them is edited by hand. It can be switched
 off.
 
 The **sounds** come in an order that suits a headset too: the start sound plays to its end before the microphone opens,

@@ -1,4 +1,4 @@
-//! The tray icon: its colour and tooltip show the state, its menu has the settings, the overlay switch, the
+//! The tray icon: its picture (the dictation badge in its state) and tooltip show the state, its menu has the settings, the overlay switch, the
 //! history (a click copies an entry) and quitting.
 
 use std::sync::Arc;
